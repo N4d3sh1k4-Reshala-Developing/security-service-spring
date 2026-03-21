@@ -1,0 +1,37 @@
+package com.n4d3sh1k4.security_service.dto.request_dto;
+
+import com.n4d3sh1k4.security_service.dto.validation.PasswordMatch;
+import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
+import lombok.Data;
+
+@Schema(description = "Сущность регистрации")
+@Data
+@PasswordMatch
+public class RegisterRequest {
+
+    @Schema(example = "Олег | Олег Семенович")
+    @NotBlank
+    @Size(min = 2, max = 50)
+    @Pattern(regexp = "^[а-яА-ЯёЁ]+(-[а-яА-ЯёЁ]+)?( [а-яА-ЯёЁ]+(-[а-яА-ЯёЁ]+)?){0,2}$",
+             message = "The name must be in Cyrillic (1-3 words) and may contain a hyphen.")
+    private String username;
+
+    @NotBlank
+    @Email
+    @Size(max = 50)
+    private String email;
+
+    @Schema(example = "Password#4848")
+    @NotBlank
+    @Size(min = 8, max = 50)
+    @Pattern(regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*()])[a-zA-Z\\d!@#$%^&*()]+$",
+             message = "The password must contain Latin characters, numbers, uppercase and lowercase letters.")
+    private String password;
+
+    @Schema(example = "Password#4848")
+    private String confirmPassword;
+}
