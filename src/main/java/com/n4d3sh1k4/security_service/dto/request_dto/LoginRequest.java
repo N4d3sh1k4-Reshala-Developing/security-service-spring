@@ -18,4 +18,7 @@ public class LoginRequest {
     @NotBlank
     @Size(max = 50)
     private String password;
+
+    @Schema(example = "true")
+    boolean rememberMe;
 }

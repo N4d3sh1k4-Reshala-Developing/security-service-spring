@@ -20,14 +20,15 @@ public class CookieUtils {
         this.refreshTokenService = refreshTokenService;
     }
 
-    public ResponseCookie generateRefreshTokenCookie(User user) {
-        return ResponseCookie.from(cookieName, refreshTokenService.createRefreshToken(user).getToken())
+    public ResponseCookie generateRefreshTokenCookie(User user, boolean rememberMe) {
+        long maxAge = rememberMe ? 30 * 24 * 60 * 60L : -1L;
+
+        return ResponseCookie.from(cookieName, refreshTokenService.createRefreshToken(user, rememberMe).getToken())
                 .httpOnly(true)
                 .secure(cookieSecureState)
                 .sameSite("None")
                 .path("/")
-                .maxAge(30 * 24 * 60 * 60) // 30 дней
-                .sameSite("Lax")
+                .maxAge(maxAge)
                 .build();
     }
 

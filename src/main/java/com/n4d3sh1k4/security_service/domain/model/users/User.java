@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.UUID;
 
@@ -20,17 +21,26 @@ public class User {
     @Column(name = "id")
     private UUID id;
 
-    @Column(name = "username")
-    private String username;
-
     @Column(name = "password_hash")
     private String passwordHash;
 
     @Column(name = "email")
     private String email;
 
+    @Column(name = "enabled")
+    private Boolean enabled = false;
+
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "users_roles", joinColumns = @JoinColumn(name = "user_id", referencedColumnName = "id"), inverseJoinColumns = @JoinColumn(name = "role_id", referencedColumnName = "id"))
     @JsonIgnore
     private Collection<Role> roles;
+
+    @Column(name = "failed_attempts")
+    private int failedAttempts;
+
+    @Column(name = "account_non_locked")
+    private boolean accountNonLocked = true;
+
+    @Column(name = "lock_time")
+    private Instant lockTime;
 }

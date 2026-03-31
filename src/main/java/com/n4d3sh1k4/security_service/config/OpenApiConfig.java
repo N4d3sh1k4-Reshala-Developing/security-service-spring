@@ -1,4 +1,4 @@
-package com.n4d3sh1k4.security_service;
+package com.n4d3sh1k4.security_service.config;
 
 
 import io.swagger.v3.oas.models.Components;

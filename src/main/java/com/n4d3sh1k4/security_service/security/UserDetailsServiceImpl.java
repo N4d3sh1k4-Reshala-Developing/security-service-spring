@@ -32,6 +32,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
                 .authorities(user.getRoles().stream()
                         .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName()))
                         .collect(Collectors.toList()))
+                .disabled(!user.getEnabled())
                 .build();
     }
 }

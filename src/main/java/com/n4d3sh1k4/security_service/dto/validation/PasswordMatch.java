@@ -12,7 +12,7 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Constraint(validatedBy = PasswordMatchValidator.class)
 public @interface PasswordMatch {
-    String message() default "Пароли не совпадают";
+    String message() default "Passwords do not contain"; // Ключ для перевода
     Class<?>[] groups() default {};
     Class<? extends Payload>[] payload() default {};
 }

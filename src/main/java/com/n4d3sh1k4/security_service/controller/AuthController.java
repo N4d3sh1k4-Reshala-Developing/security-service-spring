@@ -42,17 +42,36 @@ public class AuthController {
         this.authService = authService;
     }
 
-    //Оставляем
+    //Есть
     @Operation(summary = "Регистрация пользователей", description = "Позволяет добавить пользователя в систему. После регистрации возвращает клиенту пару ключей авторизации: acces в body и refresh в куки.")
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest req) {
-        AuthServiceResult result = authService.registerUser(req);
-        return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, result.getCookie())
-                .body(new JwtResponse(result.getAccesToken()));
+        authService.registerUser(req);
+        return ResponseEntity.ok("Registration successful. Please check your email.");
     }
 
-    //Оставляем
+    //Есть
+    @GetMapping("/confirm")
+    public ResponseEntity<?> confirmRegistration(@RequestParam("token") String token) {
+        try {
+            authService.activateUser(token);
+            return ResponseEntity.ok("Аккаунт успешно активирован! Теперь вы можете войти.");
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/resend-confirmation")
+    public ResponseEntity<?> resendToken(@RequestParam("email") String email) {
+        try {
+            authService.resendConfirmToken(email);
+            return ResponseEntity.ok("Новое письмо с подтверждением отправлено на вашу почту.");
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    //Есть
     @Operation(summary = "Авторизация пользователей", description = "Позволяет авторизоваться пользователю в системе. После авторизации возвращает клиенту пару ключей авторизации: acces в body и refresh в куки.")
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest loginRequest) {
@@ -64,7 +83,7 @@ public class AuthController {
                 .body(new JwtResponse(result.getAccesToken()));
     }
 
-    //Оставляем
+    //Есть
     @Operation(summary = "Обновление refresh токена авторизации", description = "Позволяет фронту обновить refresh токен пользователя без необходимости повторного входа а аккаунт по истечению времени пребывания авторизованным.")
     @PostMapping("/refresh")
     public ResponseEntity<?> refresh(@CookieValue(name = "refreshToken", required = false) String refreshToken) {
@@ -77,7 +96,7 @@ public class AuthController {
                 .body(new JwtResponse(result.getAccesToken()));
     }
 
-    //Оставляем
+    //Есть
     @Operation(summary = "Выход пользователя из аккаунта", description = "Позволяет пользователю обнулить текущую сессию. Удаляет токен из куки.")
     @PostMapping("/logout")
     public ResponseEntity<?> logout(@CookieValue(name = "refreshToken", required = false) String refreshToken, Principal principal) {

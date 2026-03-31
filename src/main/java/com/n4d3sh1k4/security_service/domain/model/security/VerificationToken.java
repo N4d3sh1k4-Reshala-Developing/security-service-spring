@@ -2,39 +2,40 @@ package com.n4d3sh1k4.security_service.domain.model.security;
 
 import com.n4d3sh1k4.security_service.domain.model.users.User;
 import jakarta.persistence.*;
-import lombok.Getter;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "password_reset_tokens")
+@Table(name = "verification_token")
 @EntityListeners(AuditingEntityListener.class)
-@Getter
-@Setter
+@Data
+@AllArgsConstructor
 @NoArgsConstructor
-public class PasswordResetToken {
+public class VerificationToken {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "id")
     private UUID id;
 
     @CreatedDate
     @Column(updatable = false)
     private LocalDateTime createdAt;
 
-    private String token;
-
-    @OneToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    private LocalDateTime expiryDate;
+    @Column(nullable = false, unique = true)
+    private String token;
 
-    public boolean isExpired() {
-        return LocalDateTime.now().isAfter(expiryDate);
-    }
+    @Column(nullable = false)
+    private Instant expiryDate;
 }

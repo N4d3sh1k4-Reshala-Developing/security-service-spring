@@ -16,7 +16,7 @@ public class ResetPasswordRequest {
     @Schema(example = "Password#4848")
     @NotBlank
     @Size(min = 8, max = 50)
-    @Pattern(regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)[a-zA-Z\\d]+$",
-             message = "Пароль должен содержать латиницу, цифры, заглавные и строчные буквы")
+    @Pattern(regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*()])[a-zA-Z\\d!@#$%^&*()]+$",
+             message = "The password must contain Latin characters, numbers, uppercase and lowercase letters.")
     private String newPassword;
 }

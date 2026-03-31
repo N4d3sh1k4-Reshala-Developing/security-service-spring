@@ -20,16 +20,18 @@ public class RegisterRequest {
              message = "The name must be in Cyrillic (1-3 words) and may contain a hyphen.")
     private String username;
 
-    @NotBlank
-    @Email
+    @NotBlank(message = "Email is required")
+    @Email(message = "Invalid email format")
     @Size(max = 50)
     private String email;
 
     @Schema(example = "Password#4848")
-    @NotBlank
-    @Size(min = 8, max = 50)
-    @Pattern(regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*()])[a-zA-Z\\d!@#$%^&*()]+$",
-             message = "The password must contain Latin characters, numbers, uppercase and lowercase letters.")
+    @NotBlank(message = "Password is required")
+    @Size(min = 8, max = 50, message = "Password must be between 8 and 50 characters")
+    @Pattern(
+        regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*()])[a-zA-Z\\d!@#$%^&*()]+$",
+        message = "The password must contain Latin characters, numbers, uppercase and lowercase letters."
+    )
     private String password;
 
     @Schema(example = "Password#4848")

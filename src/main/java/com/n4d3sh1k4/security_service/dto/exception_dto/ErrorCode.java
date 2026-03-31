@@ -10,7 +10,8 @@ public enum ErrorCode {
     TOKEN_NOT_FOUND("Token not found"),
     VALIDATION_ERROR("Field validation error"),
     USER_NOT_FOUND("The user was not found in the system"),
-    INTERNAL_ERROR("Internal server error");
+    INTERNAL_ERROR("Internal server error"),
+    TOO_MANY_REQUESTS("Too many requests");
 
     private final String defaultMessage;
 
