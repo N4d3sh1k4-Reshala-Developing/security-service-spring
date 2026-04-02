@@ -3,6 +3,7 @@ package com.n4d3sh1k4.security_service.service;
 import com.n4d3sh1k4.security_service.domain.model.security.PasswordResetToken;
 import com.n4d3sh1k4.security_service.domain.model.security.RefreshToken;
 import com.n4d3sh1k4.security_service.domain.model.security.VerificationToken;
+import com.n4d3sh1k4.security_service.domain.model.users.AuthProvider;
 import com.n4d3sh1k4.security_service.domain.model.users.User;
 import com.n4d3sh1k4.security_service.domain.repository.PasswordResetTokenRepository;
 import com.n4d3sh1k4.security_service.domain.repository.RoleRepository;
@@ -20,6 +21,7 @@ import com.n4d3sh1k4.security_service.utils.CookieUtils;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.validator.internal.util.stereotypes.Lazy;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -31,6 +33,7 @@ import org.springframework.stereotype.Service;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.UUID;
 
 @Slf4j
@@ -44,7 +47,6 @@ public class AuthService {
     private final VerificationTokenRepository verificationTokenRepository;
 
     private final RefreshTokenService refreshTokenService;
-    private final EmailService emailService;
 
     private final PasswordEncoder passwordEncoder;
     private final JwtProvider jwtProvider;

@@ -45,14 +45,14 @@ dependencies {
     implementation 'io.jsonwebtoken:jjwt-api:0.13.0'
     runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.13.0'
     runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.13.0'
-    implementation 'org.bouncycastle:bcprov-jdk18on:1.78.1' // Для криптографии
+    implementation 'org.bouncycastle:bcprov-jdk18on:1.78.1'
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
 
     // 4. Spring Cloud (Eureka & Config)
     implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
     implementation 'org.springframework.cloud:spring-cloud-starter-config' // Добавил для работы с Config Server
 
     // 5. Utils
-    implementation 'org.springframework.boot:spring-boot-starter-mail'
     implementation 'io.github.cdimascio:java-dotenv:5.2.2'
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'

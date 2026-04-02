@@ -25,11 +25,7 @@ public class SecurityConfig {
 
     private final InternalUserFilter internalUserFilter;
     private final JwtAuthenticationEntryPoint authEntryPoint;
-
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new Argon2PasswordEncoder(16, 32, 1, 65536, 3);
-    }
+    private final OAuth2SuccessHandler oAuth2SuccessHandler;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -53,16 +49,17 @@ public class SecurityConfig {
                     "/swagger-ui/**",
                     "/v3/api-docs/**",
                     "/actuator/**"
-                ).permitAll()
-                .requestMatchers("/api/v0/admin/**").hasRole("ADMIN")
-                .anyRequest().authenticated()
+                )
+                    .permitAll()
+                    .requestMatchers("/login/oauth2/**", "/oauth2/**").permitAll()
+                    .requestMatchers("/api/v0/admin/**").hasRole("ADMIN")
+                    .anyRequest().authenticated()
             )
+                .oauth2Login(oauth2 -> oauth2
+                        .successHandler(oAuth2SuccessHandler)
+                )
             .addFilterBefore(internalUserFilter, UsernamePasswordAuthenticationFilter.class);
-        return http.build();
-    }
 
-    @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
-        return config.getAuthenticationManager();
+        return http.build();
     }
 }
