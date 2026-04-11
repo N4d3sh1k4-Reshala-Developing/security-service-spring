@@ -1,9 +1,9 @@
 package com.n4d3sh1k4.security_service.service;
 
+import com.n4d3sh1k4.common.exception.*;
 import com.n4d3sh1k4.security_service.domain.model.security.PasswordResetToken;
 import com.n4d3sh1k4.security_service.domain.model.security.RefreshToken;
 import com.n4d3sh1k4.security_service.domain.model.security.VerificationToken;
-import com.n4d3sh1k4.security_service.domain.model.users.AuthProvider;
 import com.n4d3sh1k4.security_service.domain.model.users.User;
 import com.n4d3sh1k4.security_service.domain.repository.PasswordResetTokenRepository;
 import com.n4d3sh1k4.security_service.domain.repository.RoleRepository;
@@ -15,14 +15,14 @@ import com.n4d3sh1k4.security_service.dto.event.PasswordResetEvent;
 import com.n4d3sh1k4.security_service.dto.event.UserRegisteredInternalEvent;
 import com.n4d3sh1k4.security_service.dto.request_dto.LoginRequest;
 import com.n4d3sh1k4.security_service.dto.request_dto.RegisterRequest;
-import com.n4d3sh1k4.security_service.exception.*;
 import com.n4d3sh1k4.security_service.jwt.JwtProvider;
 import com.n4d3sh1k4.security_service.utils.CookieUtils;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.hibernate.validator.internal.util.stereotypes.Lazy;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -33,13 +33,15 @@ import org.springframework.stereotype.Service;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.util.Collections;
 import java.util.UUID;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthService {
+
+    @Value("${email.resend.activated.time}")
+    String emailResendActivatedTime;
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
@@ -59,7 +61,7 @@ public class AuthService {
     @Transactional
     public void registerUser(RegisterRequest req) {
         if (userRepository.findByEmail(req.getEmail()).isPresent()) {
-            throw new UserAlreadyExistsException("A user with this email already exists!");
+            throw new UserAlreadyExistsException("A user with this email already exists");
         }
 
         String encodedPassword = passwordEncoder.encode(req.getPassword());
@@ -79,13 +81,14 @@ public class AuthService {
 
         eventPublisher.publishEvent(new UserRegisteredInternalEvent(
                 user.getId(),
-                req.getUsername(),
+                req.getFirstName(),
+                req.getLastName(),
                 user.getEmail()
         ));
 
         eventPublisher.publishEvent(new NotificationEmailEvent(
                 user.getEmail(),
-                req.getUsername(),
+                req.getFirstName() + " " +  req.getLastName(),
                 tokenValue
         ));
     }
@@ -93,11 +96,11 @@ public class AuthService {
     @Transactional
     public void activateUser(String tokenValue) {
         VerificationToken verificationToken = verificationTokenRepository.findByToken(tokenValue)
-                .orElseThrow(() -> new RuntimeException("Невалидный токен подтверждения"));
+                .orElseThrow(() -> new TokenNotFoundException("Activate token not found or provided", "NOT_FOUND", HttpStatus.NOT_FOUND));
 
         if (verificationToken.getExpiryDate().isBefore(Instant.now())) {
             verificationTokenRepository.delete(verificationToken);
-            throw new RuntimeException("Срок действия токена истек. Зарегистрируйтесь снова.");
+            throw new TokenNotFoundException("This link is no longer valid.", "LINK_EXPIRED", HttpStatus.GONE);
         }
 
         User user = verificationToken.getUser();
@@ -112,18 +115,18 @@ public class AuthService {
     @Transactional
     public void resendConfirmToken(String email) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Пользователь с таким email не найден"));
+                .orElseThrow(() -> new UserNotFoundException("User with this email not found."));
 
         if (user.getEnabled()) {
-            throw new RuntimeException("Аккаунт уже подтвержден. Попробуйте войти.");
+            throw new UserAlreadyActivatedException("The account has already been verified");
         }
 
         verificationTokenRepository.findByUser(user).ifPresent(token -> {
             if (token.getCreatedAt() == null) {
-                return;
+                throw new TokenCreationException("The old activation token exists, but its creation date is NULL.");
             }
 
-            if (token.getCreatedAt().isAfter(LocalDateTime.now().minusMinutes(15))) {
+            if (token.getCreatedAt().isAfter(LocalDateTime.now().minusMinutes(Integer.parseInt(emailResendActivatedTime)))) {
                 throw new TooManyRequestsException("Too fast!");
             }
         });
@@ -148,7 +151,7 @@ public class AuthService {
 
     public AuthServiceResult loginUser(LoginRequest req) {
         User user = userRepository.findByEmail(req.getEmail())
-            .orElseThrow(() -> new BadCredentialsException("User not found"));
+            .orElseThrow(() -> new ContentNotFoundException("User not found"));
 
         if (!user.isAccountNonLocked() && user.getLockTime() != null) {
             if (user.getLockTime().isBefore(Instant.now())) {
@@ -174,7 +177,7 @@ public class AuthService {
     @Transactional
     public AuthServiceResult logoutUser(String userId, String refreshToken) {
         if (refreshToken == null) {
-            throw new BadCredentialsException("No refresh token provided");
+            throw new ContentNotFoundException("No refresh token provided");
         }
 
         var tokenOpt = refreshTokenService.findByToken(refreshToken);
@@ -194,10 +197,10 @@ public class AuthService {
     @Transactional
     public AuthServiceResult refreshToken(String refreshToken) {
         RefreshToken oldToken = refreshTokenService.findByToken(refreshToken)
-            .orElseThrow(TokenNotFoundException::new);
+            .orElseThrow(() -> new TokenNotFoundException("Refresh token not found or provided.","REFRESH_TOKEN_NOT_FOUND", HttpStatus.NOT_FOUND));
 
         User user = oldToken.getUser();
-        boolean rememberMe = oldToken.isRememberMe(); // <-- ВОТ ОНО! Наследуем состояние
+        boolean rememberMe = oldToken.isRememberMe();
 
         return new AuthServiceResult(
                 jwtProvider.generateAccessToken(user),
@@ -208,7 +211,7 @@ public class AuthService {
     @Transactional
     public void createPasswordResetToken(String email) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException("User with this email not found."));
 
         passwordResetTokenRepository.findByUser(user).ifPresent(token -> {
             if (token.getCreatedAt().isAfter(LocalDateTime.now().minusMinutes(5))) {
@@ -233,11 +236,11 @@ public class AuthService {
     @Transactional
     public void resetPassword(String token, String newPassword) {
         PasswordResetToken resetToken = passwordResetTokenRepository.findByToken(token)
-                .orElseThrow(() -> new RuntimeException("Invalid token"));
+                .orElseThrow(() -> new TokenNotFoundException("Token no found.","TOKEN_NOT_FOUND", HttpStatus.NOT_FOUND));
 
         if (resetToken.isExpired()) {
             passwordResetTokenRepository.delete(resetToken);
-            throw new RuntimeException("Token expired");
+            throw new TokenNotFoundException("Token expired.","TOKEN_EXPIRED", HttpStatus.GONE);
         }
         User user = resetToken.getUser();
         user.setPasswordHash(passwordEncoder.encode(newPassword));

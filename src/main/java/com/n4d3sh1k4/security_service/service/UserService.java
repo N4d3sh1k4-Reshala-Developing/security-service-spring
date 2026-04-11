@@ -22,7 +22,7 @@ public class UserService {
     private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
-    public User processOAuthPostLogin(String email, String fullName) {
+    public User processOAuthPostLogin(String email, String firstName, String lastName) {
         return userRepository.findByEmail(email)
             .map(user -> {
                 log.info("OAuth login for existing user: {}", email);
@@ -44,7 +44,8 @@ public class UserService {
 
                 eventPublisher.publishEvent(new UserRegisteredInternalEvent(
                         newUser.getId(),
-                        fullName,
+                        firstName,
+                        lastName,
                         newUser.getEmail()
                 ));
 

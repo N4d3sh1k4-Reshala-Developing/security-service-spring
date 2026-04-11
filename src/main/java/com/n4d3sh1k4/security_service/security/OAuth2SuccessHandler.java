@@ -42,12 +42,20 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
 
         String firstName = oAuth2User.getAttribute("first_name");
         String lastName = oAuth2User.getAttribute("last_name");
+        String displayName = oAuth2User.getAttribute("display_name");
 
-        String fullName = (firstName != null ? firstName : "") +
-                          (lastName != null ? " " + lastName : "");
-        fullName = fullName.trim().isEmpty() ? oAuth2User.getAttribute("display_name") : fullName;
+        if ((firstName == null || firstName.isBlank()) && (lastName == null || lastName.isBlank())) {
+            if (displayName != null && !displayName.isBlank()) {
+                String[] parts = displayName.trim().split("\\s+", 2);
+                firstName = parts[0];
+                lastName = (parts.length > 1) ? parts[1] : "";
+            }
+        }
 
-        User user = userService.processOAuthPostLogin(email, fullName);
+        firstName = (firstName != null) ? firstName.trim() : "";
+        lastName = (lastName != null) ? lastName.trim() : "";
+
+        User user = userService.processOAuthPostLogin(email, firstName, lastName);
 
         String accessToken = jwtProvider.generateAccessToken(user);
         ResponseCookie refreshTokenCookie = cookieUtils.generateRefreshTokenCookie(user, true);

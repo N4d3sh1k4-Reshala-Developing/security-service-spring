@@ -20,7 +20,7 @@ public class UserRegistrationEventListener {
     public void handleUserRegistration(UserRegisteredInternalEvent event) {
         log.info("Transaction committed. Sending event to RabbitMQ for user: {}", event.id());
 
-        UserCreatedEvent rabbitEvent = new UserCreatedEvent(event.id(), event.username(), event.email());
+        UserCreatedEvent rabbitEvent = new UserCreatedEvent(event.id(), event.firstName(), event.lastName(), event.email());
 
         rabbitTemplate.convertAndSend("user-exchange", "user.created", rabbitEvent);
     }

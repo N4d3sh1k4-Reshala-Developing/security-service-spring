@@ -27,7 +27,7 @@ public class JwtProvider {
     //Оставить
     public String generateAccessToken(@NonNull User user) {
         return Jwts.builder()
-                .subject(user.getEmail())
+                .subject(user.getId().toString())
                 .claim("roles", user.getRoles().stream().map(r -> "ROLE_" + r.getName()).toList())
                 .issuedAt(new Date())
                 .expiration(Date.from(Instant.now().plus(15, ChronoUnit.MINUTES)))

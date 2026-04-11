@@ -21,13 +21,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
-import java.util.Map;
 
 @Tag(name="Авторизация", description = "всё про авторизацию")
 @RestController
@@ -42,36 +40,26 @@ public class AuthController {
         this.authService = authService;
     }
 
-    //Есть
     @Operation(summary = "Регистрация пользователей", description = "Позволяет добавить пользователя в систему. После регистрации возвращает клиенту пару ключей авторизации: acces в body и refresh в куки.")
     @PostMapping("/register")
-    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest req) {
+    public ResponseEntity<Object> register(@Valid @RequestBody RegisterRequest req) {
         authService.registerUser(req);
-        return ResponseEntity.ok("Registration successful. Please check your email.");
+        return ResponseEntity.ok().build();
     }
 
-    //Есть
     @GetMapping("/confirm")
     public ResponseEntity<?> confirmRegistration(@RequestParam("token") String token) {
-        try {
-            authService.activateUser(token);
-            return ResponseEntity.ok("Аккаунт успешно активирован! Теперь вы можете войти.");
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+        authService.activateUser(token);
+        return ResponseEntity.ok().build();
     }
 
     @PostMapping("/resend-confirmation")
     public ResponseEntity<?> resendToken(@RequestParam("email") String email) {
-        try {
-            authService.resendConfirmToken(email);
-            return ResponseEntity.ok("Новое письмо с подтверждением отправлено на вашу почту.");
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+        authService.resendConfirmToken(email);
+        return ResponseEntity.ok().build();
+
     }
 
-    //Есть
     @Operation(summary = "Авторизация пользователей", description = "Позволяет авторизоваться пользователю в системе. После авторизации возвращает клиенту пару ключей авторизации: acces в body и refresh в куки.")
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest loginRequest) {
@@ -83,7 +71,6 @@ public class AuthController {
                 .body(new JwtResponse(result.getAccesToken()));
     }
 
-    //Есть
     @Operation(summary = "Обновление refresh токена авторизации", description = "Позволяет фронту обновить refresh токен пользователя без необходимости повторного входа а аккаунт по истечению времени пребывания авторизованным.")
     @PostMapping("/refresh")
     public ResponseEntity<?> refresh(@CookieValue(name = "refreshToken", required = false) String refreshToken) {
@@ -96,7 +83,6 @@ public class AuthController {
                 .body(new JwtResponse(result.getAccesToken()));
     }
 
-    //Есть
     @Operation(summary = "Выход пользователя из аккаунта", description = "Позволяет пользователю обнулить текущую сессию. Удаляет токен из куки.")
     @PostMapping("/logout")
     public ResponseEntity<?> logout(@CookieValue(name = "refreshToken", required = false) String refreshToken, Principal principal) {
@@ -108,19 +94,17 @@ public class AuthController {
                 .body("Logged out successfully");
     }
 
-    //Под вопросом
     @Operation(summary = "Восстановление пароля", description = "Принимает почту пользователя и отправляет на неё письмо для восстановления пароля.")
     @PostMapping("/forgot-password")
     public ResponseEntity<?> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
         authService.createPasswordResetToken(request.getEmail());
-        return ResponseEntity.ok(HttpStatus.OK);
+        return ResponseEntity.ok().build();
     }
 
-    //Под вопросом
     @Operation(summary = "Смена пароля", description = "Позволяет сменить пароль при наличии токена из письма с почты.")
     @PostMapping("/reset-password")
     public ResponseEntity<?> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
         authService.resetPassword(request.getToken(), request.getNewPassword());
-        return ResponseEntity.ok(HttpStatus.OK);
+        return ResponseEntity.ok().build();
     }
 }

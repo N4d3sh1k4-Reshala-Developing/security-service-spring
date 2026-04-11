@@ -52,7 +52,7 @@ public class SecurityConfig {
                 )
                     .permitAll()
                     .requestMatchers("/login/oauth2/**", "/oauth2/**").permitAll()
-                    .requestMatchers("/api/v0/admin/**").hasRole("ADMIN")
+                    .requestMatchers("/admin/**").hasRole("ADMIN")
                     .anyRequest().authenticated()
             )
                 .oauth2Login(oauth2 -> oauth2
