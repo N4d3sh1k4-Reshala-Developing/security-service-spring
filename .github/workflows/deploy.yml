@@ -64,7 +64,7 @@ jobs:
           echo "${{ secrets.SERVER_SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           
-          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa docker-compose.yml ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_TAILSCALE_IP }} \
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa docker-compose.yml ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_TAILSCALE_IP }} \
             "mkdir -p ${{ env.PROJECT_ROOT }}/${{ env.SERVICE_NAME }}"
           
           scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa docker-compose.yml \
