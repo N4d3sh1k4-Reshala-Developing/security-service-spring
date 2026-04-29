@@ -21,6 +21,13 @@ configurations {
 
 repositories {
 	mavenCentral()
+    maven {
+        url = uri("https://maven.pkg.github.com/n4d3sh1k4-reshala-developing/common-library-spring")
+        credentials {
+            username = System.getenv("GHP_USER") ?: project.findProperty("ghpUser")
+            password = System.getenv("GHP_TOKEN") ?: project.findProperty("ghpToken")
+        }
+    }
 }
 
 ext {
@@ -74,7 +81,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     testImplementation 'org.springframework.boot:spring-boot-starter-actuator-test'
 
-    implementation project(':common')
+    implementation('com.n4d3sh1k4:common:1.0-SNAPSHOT')
 }
 
 dependencyManagement {

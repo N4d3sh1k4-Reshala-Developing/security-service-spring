@@ -1,4 +1,11 @@
 rootProject.name = "security-service"
 
-include ':common'
-project(':common').projectDir = new File('../common')
+def commonDir = file("../common")
+
+if (commonDir.exists()) {
+    includeBuild(commonDir) {
+        dependencySubstitution {
+            substitute module('com.n4d3sh1k4:common') using project(':')
+        }
+    }
+}
