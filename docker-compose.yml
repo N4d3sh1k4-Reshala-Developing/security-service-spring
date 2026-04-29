@@ -1,0 +1,35 @@
+services:
+  security-service:
+    image: ghcr.io/${GITHUB_REPOSITORY}:latest
+    container_name: security-service-reshala
+    ports:
+      - "8181:8181"
+    environment:
+      - SERVER_PORT=8181
+      - SPRING_PROFILES_ACTIVE=prod
+
+      - EUREKA_CLIENT_ENABLED=false
+
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-reshala:5432/security_db
+      - SPRING_DATASOURCE_USERNAME=${DB_USER}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASS}
+
+      - SPRING_RABBITMQ_HOST=rabbitmq-reshala
+      - SPRING_RABBITMQ_PORT=5672
+      - SPRING_RABBITMQ_USERNAME=${RMQ_USER}
+      - SPRING_RABBITMQ_PASSWORD=${RMQ_PASS}
+      - SPRING_RABBITMQ_VIRTUAL_HOST=system-service
+
+      - SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_YANDEX_CLIENT_ID=${YANDEX_CLIENT_ID}
+      - SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_YANDEX_CLIENT_SECRET=${YANDEX_CLIENT_SECRET}
+
+      - JWT_SECRET_ACCESS=${JWT_SECRET}
+      - COOKIE_SECURE_STATE=true
+
+    networks:
+      - reshala-net
+    restart: unless-stopped
+
+networks:
+  reshala-net:
+    external: true

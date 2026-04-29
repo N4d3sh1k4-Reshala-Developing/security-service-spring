@@ -12,7 +12,6 @@ import com.n4d3sh1k4.security_service.domain.repository.VerificationTokenReposit
 import com.n4d3sh1k4.security_service.dto.AuthServiceResult;
 import com.n4d3sh1k4.security_service.dto.event.NotificationEmailEvent;
 import com.n4d3sh1k4.security_service.dto.event.PasswordResetEvent;
-import com.n4d3sh1k4.security_service.dto.event.UserRegisteredInternalEvent;
 import com.n4d3sh1k4.security_service.dto.request_dto.LoginRequest;
 import com.n4d3sh1k4.security_service.dto.request_dto.RegisterRequest;
 import com.n4d3sh1k4.security_service.jwt.JwtProvider;
@@ -30,6 +29,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import javax.security.auth.login.AccountLockedException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -70,6 +70,7 @@ public class AuthService {
         user.setEmail(req.getEmail());
         user.setPasswordHash(encodedPassword);
         user.setRoles(roleRepository.findByName("USER"));
+        user.setUsername(req.getEmail().split("@")[0]);
         userRepository.save(user);
 
         String tokenValue = UUID.randomUUID().toString();
@@ -79,16 +80,9 @@ public class AuthService {
         verificationToken.setExpiryDate(Instant.now().plus(Duration.ofHours(1)));
         verificationTokenRepository.save(verificationToken);
 
-        eventPublisher.publishEvent(new UserRegisteredInternalEvent(
-                user.getId(),
-                req.getFirstName(),
-                req.getLastName(),
-                user.getEmail()
-        ));
-
         eventPublisher.publishEvent(new NotificationEmailEvent(
                 user.getEmail(),
-                req.getFirstName() + " " +  req.getLastName(),
+                req.getEmail().split("@")[0],
                 tokenValue
         ));
     }
@@ -142,7 +136,7 @@ public class AuthService {
 
         eventPublisher.publishEvent(new NotificationEmailEvent(
                 user.getEmail(),
-                null,
+                user.getUsername(),
                 tokenValue
         ));
 
@@ -153,7 +147,7 @@ public class AuthService {
         User user = userRepository.findByEmail(req.getEmail())
             .orElseThrow(() -> new ContentNotFoundException("User not found"));
 
-        if (!user.isAccountNonLocked() && user.getLockTime() != null) {
+        if (user.getLockTime() != null) {
             if (user.getLockTime().isBefore(Instant.now())) {
                 user.setAccountNonLocked(true);
                 user.setFailedAttempts(0);
@@ -163,6 +157,10 @@ public class AuthService {
                 throw new TooManyRequestsException("Account is locked. Try again later.");
             }
         }
+
+//        if (!user.isAccountNonLocked()) {
+//            throw new UniversalExeption("Account not activate", "EMAIL_NOT_VERIFIED",  HttpStatus.FORBIDDEN);
+//        }
 
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(req.getEmail(), req.getPassword()));

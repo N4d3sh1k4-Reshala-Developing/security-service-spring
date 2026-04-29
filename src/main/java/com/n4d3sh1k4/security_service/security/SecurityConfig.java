@@ -52,6 +52,7 @@ public class SecurityConfig {
                 )
                     .permitAll()
                     .requestMatchers("/login/oauth2/**", "/oauth2/**").permitAll()
+                    .requestMatchers("/auth/yandex-mobile").permitAll()
                     .requestMatchers("/admin/**").hasRole("ADMIN")
                     .anyRequest().authenticated()
             )

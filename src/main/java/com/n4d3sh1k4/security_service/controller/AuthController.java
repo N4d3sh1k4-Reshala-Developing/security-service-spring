@@ -3,14 +3,12 @@ package com.n4d3sh1k4.security_service.controller;
 import com.n4d3sh1k4.security_service.domain.repository.RoleRepository;
 import com.n4d3sh1k4.security_service.domain.repository.UserRepository;
 import com.n4d3sh1k4.security_service.dto.*;
-import com.n4d3sh1k4.security_service.dto.request_dto.ForgotPasswordRequest;
-import com.n4d3sh1k4.security_service.dto.request_dto.LoginRequest;
-import com.n4d3sh1k4.security_service.dto.request_dto.RegisterRequest;
-import com.n4d3sh1k4.security_service.dto.request_dto.ResetPasswordRequest;
+import com.n4d3sh1k4.security_service.dto.request_dto.*;
 import com.n4d3sh1k4.security_service.jwt.JwtProvider;
 import com.n4d3sh1k4.security_service.security.UserDetailsServiceImpl;
 import com.n4d3sh1k4.security_service.service.AuthService;
 import com.n4d3sh1k4.security_service.service.RefreshTokenService;
+import com.n4d3sh1k4.security_service.service.YandexAuthService;
 import com.n4d3sh1k4.security_service.utils.CookieUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -34,10 +32,12 @@ public class AuthController {
 
     private final AuthenticationManager authenticationManager;
     private final AuthService authService;
+    private final YandexAuthService  yandexAuthService;
 
-    public AuthController(AuthenticationManager authenticationManager, RefreshTokenService refreshTokenService, UserRepository userRepository, UserDetailsServiceImpl userDetailsService, JwtProvider jwtProvider, UserDetailsServiceImpl userDetailsServiceImpl, PasswordEncoder passwordEncoder, RoleRepository roleRepository, CookieUtils cookieUtils, AuthService authService) {
+    public AuthController(AuthenticationManager authenticationManager, RefreshTokenService refreshTokenService, UserRepository userRepository, UserDetailsServiceImpl userDetailsService, JwtProvider jwtProvider, UserDetailsServiceImpl userDetailsServiceImpl, PasswordEncoder passwordEncoder, RoleRepository roleRepository, CookieUtils cookieUtils, AuthService authService, YandexAuthService yandexAuthService) {
         this.authenticationManager = authenticationManager;
         this.authService = authService;
+        this.yandexAuthService = yandexAuthService;
     }
 
     @Operation(summary = "Регистрация пользователей", description = "Позволяет добавить пользователя в систему. После регистрации возвращает клиенту пару ключей авторизации: acces в body и refresh в куки.")
@@ -47,7 +47,7 @@ public class AuthController {
         return ResponseEntity.ok().build();
     }
 
-    @GetMapping("/confirm")
+    @GetMapping("/confirm-email")
     public ResponseEntity<?> confirmRegistration(@RequestParam("token") String token) {
         authService.activateUser(token);
         return ResponseEntity.ok().build();
@@ -68,7 +68,7 @@ public class AuthController {
         AuthServiceResult result = authService.loginUser(loginRequest);
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, result.getCookie())
-                .body(new JwtResponse(result.getAccesToken()));
+                .body(new JwtResponse(result.getAccessToken()));
     }
 
     @Operation(summary = "Обновление refresh токена авторизации", description = "Позволяет фронту обновить refresh токен пользователя без необходимости повторного входа а аккаунт по истечению времени пребывания авторизованным.")
@@ -80,7 +80,7 @@ public class AuthController {
         AuthServiceResult result = authService.refreshToken(refreshToken);
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, result.getCookie())
-                .body(new JwtResponse(result.getAccesToken()));
+                .body(new JwtResponse(result.getAccessToken()));
     }
 
     @Operation(summary = "Выход пользователя из аккаунта", description = "Позволяет пользователю обнулить текущую сессию. Удаляет токен из куки.")
@@ -104,7 +104,16 @@ public class AuthController {
     @Operation(summary = "Смена пароля", description = "Позволяет сменить пароль при наличии токена из письма с почты.")
     @PostMapping("/reset-password")
     public ResponseEntity<?> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
-        authService.resetPassword(request.getToken(), request.getNewPassword());
+        authService.resetPassword(request.getToken(), request.getPassword());
         return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/yandex-mobile")
+    public ResponseEntity<?> yandexMobile(@RequestBody YandexMobileTokenRequest request) {
+        AuthServiceResult result = yandexAuthService.authenticateMobile(request.getAccessToken());
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, result.getCookie())
+                .body(new JwtResponse(result.getAccessToken()));
     }
 }

@@ -30,18 +30,15 @@ public class InternalUserFilter extends OncePerRequestFilter {
         String rolesHeader = request.getHeader("X-User-Roles");
 
         if (userId != null) {
-            // Превращаем строку ролей "ROLE_USER,ROLE_ADMIN" в список Authority
             List<SimpleGrantedAuthority> authorities = Arrays.stream(rolesHeader.split(","))
                     .map(SimpleGrantedAuthority::new)
                     .collect(Collectors.toList());
 
-            // Создаем объект аутентификации. Пароль нам не нужен (null)
             UsernamePasswordAuthenticationToken auth =
                 new UsernamePasswordAuthenticationToken(userId, null, authorities);
 
             auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
-            // Кладем в контекст Спринга
             SecurityContextHolder.getContext().setAuthentication(auth);
             log.debug("Internal auth set for user: {}", userId);
         }

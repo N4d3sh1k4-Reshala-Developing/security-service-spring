@@ -12,21 +12,6 @@ import lombok.Data;
 @Data
 @PasswordMatch
 public class RegisterRequest {
-
-    @Schema(description = "Имя пользователя", example = "Олег")
-    @NotBlank
-    @Size(min = 2, max = 50)
-    @Pattern(regexp = "^[а-яА-ЯёЁ]+(-[а-яА-ЯёЁ]+)?$",
-             message = "The name must be in Cyrillic and may contain a hyphen.")
-    private String firstName;
-
-    @Schema(description = "Фамилия пользователя", example = "Иванов")
-    @NotBlank
-    @Size(min = 2, max = 50)
-    @Pattern(regexp = "^[а-яА-ЯёЁ]+(-[а-яА-ЯёЁ]+)?$",
-             message = "The surname must be in Cyrillic and may contain a hyphen.")
-    private String lastName;
-
     @NotBlank(message = "Email is required")
     @Email(message = "Invalid email format")
     @Size(max = 50)

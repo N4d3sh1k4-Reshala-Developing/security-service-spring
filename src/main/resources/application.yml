@@ -1,0 +1,95 @@
+spring:
+  application:
+    name: security-service
+
+  cloud:
+    config:
+      enabled: false
+
+  datasource:
+    url: jdbc:postgresql://localhost:5430/security_db
+    username: postgres
+    password: password
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: system-user
+    password: systempass
+    virtual-host: system-service
+    template:
+      retry:
+        enabled: true
+        initial-interval: 1000ms
+        max-attempts: 3
+
+  security:
+    oauth2:
+      client:
+        registration:
+          yandex:
+            client-id: 5e58d1a8f2f141df8928574f01b6e152
+            client-secret: ee83b067fb004d719a40966a212ec522
+            client-name: Yandex
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+            scope:
+              - login:email
+              - login:info
+        provider:
+          yandex:
+            authorization-uri: https://oauth.yandex.ru/authorize
+            token-uri: https://oauth.yandex.ru/token
+            user-info-uri: https://login.yandex.ru/info
+            user-name-attribute: id
+
+server:
+  port: 8181
+  forward-headers-strategy: native
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://eureka-user:zvBGTYdMUJV7mpRs35YA@localhost:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
+    ip-address: 127.0.0.1
+    hostname: localhost
+    instance-id: ${spring.application.name}:${server.port}
+
+logging:
+  level:
+    root: INFO
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.springframework.web: DEBUG
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: always
+
+jwt:
+  secret:
+    access: dGhpcy1pcy1hLWxvY2FsLWRldi1zZWNsLyZXQtYmFzZsLTY0LWtleQ==
+
+cookie:
+  secure:
+    state: false
+
+email:
+  resend:
+    activated:
+      time: 1

@@ -32,6 +32,9 @@ public class User {
     @Column(name = "auth_provider")
     private AuthProvider provider = AuthProvider.LOCAL;
 
+    @Column(name = "username")
+    private String username;
+
     @Column(name = "enabled")
     private Boolean enabled = false;
 
