@@ -41,7 +41,7 @@ public class SecurityConfig {
                     "/auth/refresh",
                     "/auth/forgot-password",
                     "/auth/reset-password",
-                    "/auth/confirm",
+                    "/auth/confirm-email",
                     "/auth/resend-confirmation",
                     "/auth/forgot-password",
                     "/auth/reset-password",
