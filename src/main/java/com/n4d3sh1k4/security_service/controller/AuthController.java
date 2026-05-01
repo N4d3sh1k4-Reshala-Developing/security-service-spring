@@ -1,5 +1,6 @@
 package com.n4d3sh1k4.security_service.controller;
 
+import com.n4d3sh1k4.common.exception.TokenNotFoundException;
 import com.n4d3sh1k4.security_service.domain.repository.RoleRepository;
 import com.n4d3sh1k4.security_service.domain.repository.UserRepository;
 import com.n4d3sh1k4.security_service.dto.*;
@@ -75,7 +76,7 @@ public class AuthController {
     @PostMapping("/refresh")
     public ResponseEntity<?> refresh(@CookieValue(name = "refreshToken", required = false) String refreshToken) {
         if (refreshToken == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            throw new TokenNotFoundException("Refresh token not found", "UNAUTHORIZED", HttpStatus.UNAUTHORIZED);
         }
         AuthServiceResult result = authService.refreshToken(refreshToken);
         return ResponseEntity.ok()
