@@ -7,9 +7,9 @@ spring:
       enabled: false
 
   datasource:
-    url: jdbc:postgresql://localhost:5430/security_db
-    username: postgres
-    password: password
+    url: ${DB_URL:jdbc:postgresql://localhost:5430/security_db}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -18,11 +18,11 @@ spring:
     show-sql: true
 
   rabbitmq:
-    host: localhost
-    port: 5672
-    username: system-user
-    password: systempass
-    virtual-host: system-service
+    host: ${RABBIT_HOST:localhost}
+    port: ${RABBIT_PORT:5672}
+    username: ${RABBIT_USERNAME:system-user}
+    password: ${RABBIT_PASSWORD}
+    virtual-host: ${RABBIT_VHOST:system-service}
     template:
       retry:
         enabled: true
@@ -34,8 +34,8 @@ spring:
       client:
         registration:
           yandex:
-            client-id: 5e58d1a8f2f141df8928574f01b6e152
-            client-secret: ee83b067fb004d719a40966a212ec522
+            client-id: ${YANDEX_CLIENT_ID}
+            client-secret: ${YANDEX_CLIENT_SECRET}
             client-name: Yandex
             authorization-grant-type: authorization_code
             redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
@@ -56,7 +56,7 @@ server:
 eureka:
   client:
     service-url:
-      defaultZone: http://eureka-user:zvBGTYdMUJV7mpRs35YA@localhost:8761/eureka/
+      defaultZone: http://${EUREKA_USER}:${EUREKA_PASSWORD}@${EUREKA_HOST:localhost}:8761/eureka/
     register-with-eureka: true
     fetch-registry: true
   instance:
@@ -64,6 +64,10 @@ eureka:
     ip-address: 127.0.0.1
     hostname: localhost
     instance-id: ${spring.application.name}:${server.port}
+
+jwt:
+  secret:
+    access: ${JWT_ACCESS_SECRET}
 
 logging:
   level:
@@ -81,13 +85,9 @@ management:
     health:
       show-details: always
 
-jwt:
-  secret:
-    access: dGhpcy1pcy1hLWxvY2FsLWRldi1zZWNsLyZXQtYmFzZsLTY0LWtleQ==
-
 cookie:
   secure:
-    state: false
+    state: ${COOKIE_SECURE:false}
 
 email:
   resend:
