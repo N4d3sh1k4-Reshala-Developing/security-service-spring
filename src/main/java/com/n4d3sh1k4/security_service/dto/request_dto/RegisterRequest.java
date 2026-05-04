@@ -17,6 +17,10 @@ public class RegisterRequest {
     @Size(max = 50)
     private String email;
 
+    public void setEmail(String email) {
+        this.email = (email != null) ? email.toLowerCase().trim() : null;
+    }
+
     @Schema(example = "Password#4848")
     @NotBlank(message = "Password is required")
     @Size(min = 8, max = 50, message = "Password must be between 8 and 50 characters")

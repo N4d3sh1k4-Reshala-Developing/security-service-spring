@@ -158,10 +158,6 @@ public class AuthService {
             }
         }
 
-//        if (!user.isAccountNonLocked()) {
-//            throw new UniversalExeption("Account not activate", "EMAIL_NOT_VERIFIED",  HttpStatus.FORBIDDEN);
-//        }
-
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(req.getEmail(), req.getPassword()));
         SecurityContextHolder.getContext().setAuthentication(authentication);

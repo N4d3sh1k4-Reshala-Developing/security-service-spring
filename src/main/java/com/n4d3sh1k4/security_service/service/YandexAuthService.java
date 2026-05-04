@@ -21,21 +21,17 @@ public class YandexAuthService {
     private final CookieUtils cookieUtils;
 
     public AuthServiceResult authenticateMobile(String yandexAccessToken) {
-        // 1. Получаем данные пользователя из Яндекса
         Map<String, Object> attributes = fetchYandexUserInfo(yandexAccessToken);
 
         String email = (String) attributes.get("default_email");
         String firstName = (String) attributes.get("first_name");
         String lastName = (String) attributes.get("last_name");
 
-        // 2. Используем твой существующий метод (создание/поиск пользователя)
-        User user = userService.processOAuthPostLogin(email, firstName, lastName);
+        User user = userService.processOAuthPostLogin(email.toLowerCase(), firstName, lastName);
 
-        // 3. Генерируем данные для ответа (как в твоем стандартном AuthService)
         String accessToken = jwtProvider.generateAccessToken(user);
         ResponseCookie refreshTokenCookie = cookieUtils.generateRefreshTokenCookie(user, true);
 
-        // 4. Формируем AuthServiceResult (предполагаю наличие такого конструктора или сеттеров)
         return new AuthServiceResult(accessToken, refreshTokenCookie.toString());
     }
 

@@ -13,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
@@ -37,34 +38,37 @@ public class UserService {
 
     @Transactional
     public User processOAuthPostLogin(String email, String firstName, String lastName) {
-        return userRepository.findByEmail(email)
+        return userRepository.findByEmail(email.toLowerCase())
             .map(user -> {
                 log.info("OAuth login for existing user: {}", email);
                 return user;
             })
             .orElseGet(() -> {
                 log.info("Creating new user via Yandex OAuth: {}", email);
-
                 User newUser = new User();
                 newUser.setEmail(email);
                 newUser.setPasswordHash(null);
-
                 newUser.setEnabled(true);
                 newUser.setAccountNonLocked(true);
-
                 newUser.setProvider(AuthProvider.YANDEX);
                 newUser.setRoles(roleRepository.findByName("USER"));
 
-                newUser.setUsername(firstName+" "+lastName);
-
+                String displayName;
+                boolean hasFirstName = firstName != null && !firstName.isBlank();
+                boolean hasLastName = lastName != null && !lastName.isBlank();
+                if (hasFirstName || hasLastName) {
+                    displayName = ( (hasFirstName ? firstName : "") + " " + (hasLastName ? lastName : "") ).trim();
+                } else {
+                    displayName = email.split("@")[0];
+                }
+                newUser.setUsername(displayName);
                 userRepository.save(newUser);
 
                 eventPublisher.publishEvent(new NotificationEmailMessage(
                         newUser.getEmail(),
-                        firstName+" "+lastName,
+                        displayName,
                         null
                 ));
-
                 return newUser;
             });
     }
