@@ -208,7 +208,7 @@ public class AuthService {
                 .orElseThrow(() -> new UserNotFoundException("User with this email not found."));
 
         passwordResetTokenRepository.findByUser(user).ifPresent(token -> {
-            if (token.getCreatedAt().isAfter(LocalDateTime.now().minusMinutes(5))) {
+            if (token.getCreatedAt().isAfter(LocalDateTime.now().minusMinutes(Integer.parseInt(emailResendActivatedTime)))) {
                 throw new TooManyRequestsException("Too fast!");
             }
         });
@@ -236,6 +236,7 @@ public class AuthService {
             passwordResetTokenRepository.delete(resetToken);
             throw new TokenNotFoundException("Token expired.","TOKEN_EXPIRED", HttpStatus.GONE);
         }
+
         User user = resetToken.getUser();
         user.setPasswordHash(passwordEncoder.encode(newPassword));
         userRepository.save(user);

@@ -92,4 +92,4 @@ cookie:
 email:
   resend:
     activated:
-      time: 1
+      time: 5
