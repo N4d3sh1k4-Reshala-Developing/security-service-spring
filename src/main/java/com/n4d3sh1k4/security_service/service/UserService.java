@@ -5,6 +5,7 @@ import com.n4d3sh1k4.security_service.domain.model.users.AuthProvider;
 import com.n4d3sh1k4.security_service.domain.model.users.User;
 import com.n4d3sh1k4.security_service.domain.repository.RoleRepository;
 import com.n4d3sh1k4.security_service.domain.repository.UserRepository;
+import com.n4d3sh1k4.security_service.dto.event.NotificationEmailEvent;
 import com.n4d3sh1k4.security_service.dto.event.NotificationEmailMessage;
 import com.n4d3sh1k4.security_service.dto.request_dto.UserRequest;
 import jakarta.transaction.Transactional;
@@ -64,7 +65,7 @@ public class UserService {
                 newUser.setUsername(displayName);
                 userRepository.save(newUser);
 
-                eventPublisher.publishEvent(new NotificationEmailMessage(
+                eventPublisher.publishEvent(new NotificationEmailEvent(
                         newUser.getEmail(),
                         displayName,
                         null
