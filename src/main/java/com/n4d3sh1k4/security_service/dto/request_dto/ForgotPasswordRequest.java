@@ -14,4 +14,8 @@ public class ForgotPasswordRequest {
     @Email
     @Size(max = 50)
     private String email;
+
+    public void setEmail(String email) {
+        this.email = (email != null) ? email.toLowerCase().trim() : null;
+    }
 }

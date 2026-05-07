@@ -44,9 +44,9 @@ public class RefreshTokenService {
         refreshToken.setUser(user);
         refreshToken.setToken(UUID.randomUUID().toString());
 
-        // Выставляем expiryDate в зависимости от флага
-        Instant expiry = rememberMe ? Instant.now().plus(30, ChronoUnit.DAYS) : Instant.now().plus(1, ChronoUnit.DAYS);
+        Instant expiry = rememberMe ? Instant.now().plus(7, ChronoUnit.DAYS) : Instant.now().plus(1, ChronoUnit.DAYS);
         refreshToken.setExpiryDate(expiry);
+        refreshToken.setRememberMe(rememberMe);
 
         return refreshTokenRepository.save(refreshToken);
     }

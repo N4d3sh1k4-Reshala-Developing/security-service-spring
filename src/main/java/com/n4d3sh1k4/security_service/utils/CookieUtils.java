@@ -21,7 +21,7 @@ public class CookieUtils {
     }
 
     public ResponseCookie generateRefreshTokenCookie(User user, boolean rememberMe) {
-        long maxAge = rememberMe ? 30 * 24 * 60 * 60L : -1L;
+        long maxAge = rememberMe ? 7 * 24 * 60 * 60L : -1L;
 
         return ResponseCookie.from(cookieName, refreshTokenService.createRefreshToken(user, rememberMe).getToken())
                 .httpOnly(true)

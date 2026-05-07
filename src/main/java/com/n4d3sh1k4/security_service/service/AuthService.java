@@ -193,6 +193,11 @@ public class AuthService {
         RefreshToken oldToken = refreshTokenService.findByToken(refreshToken)
             .orElseThrow(() -> new TokenNotFoundException("Refresh token not found or provided.","REFRESH_TOKEN_NOT_FOUND", HttpStatus.NOT_FOUND));
 
+        if (oldToken.getExpiryDate().isBefore(Instant.now())) {
+            refreshTokenService.deleteByToken(refreshToken);
+            throw new TokenNotFoundException("Refresh token expired", "REFRESH_TOKEN_EXPIRED", HttpStatus.UNAUTHORIZED);
+        }
+
         User user = oldToken.getUser();
         boolean rememberMe = oldToken.isRememberMe();
 
