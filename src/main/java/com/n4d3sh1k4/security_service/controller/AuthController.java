@@ -27,14 +27,14 @@ import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
 
-@Tag(name="Авторизация", description = "всё про авторизацию")
+@Tag(name = "Авторизация", description = "всё про авторизацию")
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
 
     private final AuthenticationManager authenticationManager;
     private final AuthService authService;
-    private final YandexAuthService  yandexAuthService;
+    private final YandexAuthService yandexAuthService;
 
     public AuthController(AuthenticationManager authenticationManager, RefreshTokenService refreshTokenService, UserRepository userRepository, UserDetailsServiceImpl userDetailsService, JwtProvider jwtProvider, UserDetailsServiceImpl userDetailsServiceImpl, PasswordEncoder passwordEncoder, RoleRepository roleRepository, CookieUtils cookieUtils, AuthService authService, YandexAuthService yandexAuthService) {
         this.authenticationManager = authenticationManager;
@@ -59,24 +59,24 @@ public class AuthController {
             return ResponseEntity.ok().build();
         } else {
             String htmlBody = """
-                <!DOCTYPE html>
-                <html lang="ru">
-                    <head>
-                        <meta charset="UTF-8">
-                        <title>Подтверждение почты</title>
-                        <style>
-                            body { font-family: sans-serif; text-align: center; padding-top: 50px; }
-                            .button { background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; }
-                        </style>
-                    </head>
-                    <body>
-                        <h1>Подтверждение почты</h1>
-                        <p>Ваша почта подтверждена. Войдите в аккаунт в приложении.</p>
-                        <br><br>
-                        <p style="margin-top: 30px; font-size: 0.8em;">Нет приложения? <a href="https://github.com/N4d3sh1k4-Reshala-Developing/reshala-android-app">Скачать из GitHub</a></p>
-                    </body>
-                </html>
-            """;
+                        <!DOCTYPE html>
+                        <html lang="ru">
+                            <head>
+                                <meta charset="UTF-8">
+                                <title>Подтверждение почты</title>
+                                <style>
+                                    body { font-family: sans-serif; text-align: center; padding-top: 50px; }
+                                    .button { background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; }
+                                </style>
+                            </head>
+                            <body>
+                                <h1>Подтверждение почты</h1>
+                                <p>Ваша почта подтверждена. Войдите в аккаунт в приложении.</p>
+                                <br><br>
+                                <p style="margin-top: 30px; font-size: 0.8em;">Нет приложения? <a href="https://github.com/N4d3sh1k4-Reshala-Developing/reshala-android-app">Скачать из GitHub</a></p>
+                            </body>
+                        </html>
+                    """;
 
             return ResponseEntity.ok()
                     .contentType(MediaType.valueOf("text/html;charset=UTF-8"))
@@ -87,7 +87,6 @@ public class AuthController {
     public boolean isMobile(String userAgent) {
         if (userAgent == null) return false;
         String ua = userAgent.toLowerCase();
-        // "mobi" покроет и Android, и iPhone
         return ua.contains("mobi");
     }
 
@@ -140,41 +139,40 @@ public class AuthController {
     }
 
     @Operation(summary = "Смена пароля (API)", description = "Вызывается из приложения для финальной смены пароля.")
-@PostMapping("/reset-password")
-public ResponseEntity<?> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
-    authService.resetPassword(request.getToken(), request.getPassword());
-    return ResponseEntity.ok().build();
-}
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        authService.resetPassword(request.getToken(), request.getPassword());
+        return ResponseEntity.ok().build();
+    }
 
-@Operation(summary = "Страница сброса (Браузер)", description = "То, что видит пользователь при клике из почты.")
-@GetMapping(value = "/reset-password", produces = "text/html; charset=UTF-8")
-public ResponseEntity<String> showResetPage(@RequestParam("token") String token) {
-    String htmlBody = """
-        <!DOCTYPE html>
-        <html lang="ru">
-            <head>
-                <meta charset="UTF-8">
-                <title>Сброс пароля</title>
-                <style>
-                    body { font-family: sans-serif; text-align: center; padding-top: 50px; }
-                    .button { background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; }
-                </style>
-            </head>
-            <body>
-                <h1>Сброс пароля</h1>
-                <p>Для безопасности мы меняем пароль только внутри приложения.</p>
-                <br><br>
-                <a href="reshala://api/v0/auth/reset-password?token=%s" class="button">Открыть в приложении</a>
-                <p style="margin-top: 30px; font-size: 0.8em;">Нет приложения? <a href="https://github.com/N4d3sh1k4-Reshala-Developing/reshala-android-app">Скачать из GitHub</a></p>
-            </body>
-        </html>
-    """.formatted(token);
+    @Operation(summary = "Страница сброса (Браузер)", description = "То, что видит пользователь при клике из почты.")
+    @GetMapping(value = "/reset-password", produces = "text/html; charset=UTF-8")
+    public ResponseEntity<String> showResetPage(@RequestParam("token") String token) {
+        String htmlBody = """
+                    <!DOCTYPE html>
+                    <html lang="ru">
+                        <head>
+                            <meta charset="UTF-8">
+                            <title>Сброс пароля</title>
+                            <style>
+                                body { font-family: sans-serif; text-align: center; padding-top: 50px; }
+                                .button { background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; }
+                            </style>
+                        </head>
+                        <body>
+                            <h1>Сброс пароля</h1>
+                            <p>Для безопасности мы меняем пароль только внутри приложения.</p>
+                            <br><br>
+                            <a href="reshala://api/v0/auth/reset-password?token=%s" class="button">Открыть в приложении</a>
+                            <p style="margin-top: 30px; font-size: 0.8em;">Нет приложения? <a href="https://github.com/N4d3sh1k4-Reshala-Developing/reshala-android-app">Скачать из GitHub</a></p>
+                        </body>
+                    </html>
+                """.formatted(token);
 
-    return ResponseEntity.ok()
-            .contentType(MediaType.valueOf("text/html;charset=UTF-8"))
-            .body(htmlBody);
-}
-
+        return ResponseEntity.ok()
+                .contentType(MediaType.valueOf("text/html;charset=UTF-8"))
+                .body(htmlBody);
+    }
 
 
     @PostMapping("/yandex-mobile")
