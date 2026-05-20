@@ -7,9 +7,9 @@ spring:
       enabled: false
 
   datasource:
-    url: ${DB_URL}
-    username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD}
+    url: jdbc:postgresql://localhost:5430/security_db
+    username: postgres
+    password: password
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -18,11 +18,11 @@ spring:
     show-sql: true
 
   rabbitmq:
-    host: ${RABBIT_HOST:localhost}
-    port: ${RABBIT_PORT:5672}
-    username: ${RABBIT_USERNAME:system-user}
-    password: ${RABBIT_PASSWORD}
-    virtual-host: ${RABBIT_VHOST:system-service}
+    host: localhost
+    port: 5672
+    username: system-user
+    password: systempass
+    virtual-host: system-service
     template:
       retry:
         enabled: true
@@ -34,8 +34,8 @@ spring:
       client:
         registration:
           yandex:
-            client-id: ${YANDEX_CLIENT_ID}
-            client-secret: ${YANDEX_CLIENT_SECRET}
+            client-id: 5e58d1a8f2f141df8928574f01b6e152
+            client-secret: 637fb18431784d97be2afc104e2786b9
             client-name: Yandex
             authorization-grant-type: authorization_code
             redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
@@ -56,18 +56,20 @@ server:
 eureka:
   client:
     service-url:
-      defaultZone: http://${EUREKA_USER}:${EUREKA_PASSWORD}@${EUREKA_HOST:localhost}:8761/eureka/
+      # Подставили юзера, пароль и хост прямо в url строки
+      defaultZone: http://eureka-user:zvBGTYdMUJV7mpRs35YA@localhost:8761/eureka/
     register-with-eureka: true
     fetch-registry: true
   instance:
     prefer-ip-address: true
     ip-address: 127.0.0.1
     hostname: localhost
+    # Внутренние ссылки на свойства самого Spring (как spring.application.name) оставляем, они безопасны
     instance-id: ${spring.application.name}:${server.port}
 
 jwt:
   secret:
-    access: ${JWT_ACCESS_SECRET}
+    access: AZGEwiclv3fkxe9GYSpLdIiwbWc/AzkV1SQi3YPIiq+vIAfAzrha9Q8xv79f3G3rJRPjUf1Nn0xWZ3sNajZD7Q==
 
 logging:
   level:
@@ -87,7 +89,7 @@ management:
 
 cookie:
   secure:
-    state: ${COOKIE_SECURE:false}
+    state: false
 
 email:
   resend:
