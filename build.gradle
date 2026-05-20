@@ -5,7 +5,7 @@ plugins {
 }
 
 group = 'com.n4d3sh1k4'
-version = '0.0.1-SNAPSHOT'
+version = '1.5.2'
 
 java {
 	toolchain {
@@ -52,7 +52,7 @@ dependencies {
     implementation 'io.jsonwebtoken:jjwt-api:0.13.0'
     runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.13.0'
     runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.13.0'
-    implementation 'org.bouncycastle:bcprov-jdk18on:1.78.1'
+    implementation 'org.bouncycastle:bcprov-jdk18on:1.84'
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
 
     // 4. Spring Cloud (Eureka & Config)
@@ -77,11 +77,10 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-amqp'
     testImplementation 'org.springframework.boot:spring-boot-starter-amqp-test'
 
-
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     testImplementation 'org.springframework.boot:spring-boot-starter-actuator-test'
 
-    implementation('com.n4d3sh1k4:common:1.0-SNAPSHOT')
+    implementation('com.n4d3sh1k4:common:1.1-SNAPSHOT')
 }
 
 dependencyManagement {
