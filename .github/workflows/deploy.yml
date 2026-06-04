@@ -85,6 +85,9 @@ jobs:
             echo "RMQ_PASS=${{ secrets.RMQ_PASS }}" >> .env
             echo "YANDEX_CLIENT_ID=${{ secrets.YANDEX_CLIENT_ID }}" >> .env
             echo "YANDEX_CLIENT_SECRET=${{ secrets.YANDEX_CLIENT_SECRET }}" >> .env
+            echo "DEFAULT_ADMIN_EMAIL=${{ secrets.DEFAULT_ADMIN_EMAIL }}" >> .env
+            echo "DEFAULT_ADMIN_USERNAME=${{ secrets.DEFAULT_ADMIN_USERNAME }}" >> .env
+            echo "DEFAULT_ADMIN_PASSWORD=${{ secrets.DEFAULT_ADMIN_PASSWORD }}" >> .env
             echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
             
             echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin

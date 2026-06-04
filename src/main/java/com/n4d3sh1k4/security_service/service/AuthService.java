@@ -7,11 +7,14 @@ import com.n4d3sh1k4.security_service.domain.model.security.VerificationToken;
 import com.n4d3sh1k4.security_service.domain.model.users.User;
 import com.n4d3sh1k4.security_service.domain.repository.PasswordResetTokenRepository;
 import com.n4d3sh1k4.security_service.domain.repository.RoleRepository;
+import com.n4d3sh1k4.security_service.domain.repository.UserIdentityRepository;
 import com.n4d3sh1k4.security_service.domain.repository.UserRepository;
 import com.n4d3sh1k4.security_service.domain.repository.VerificationTokenRepository;
+import com.n4d3sh1k4.security_service.domain.model.users.UserIdentity;
 import com.n4d3sh1k4.security_service.dto.AuthServiceResult;
 import com.n4d3sh1k4.security_service.dto.event.NotificationEmailEvent;
 import com.n4d3sh1k4.security_service.dto.event.PasswordResetEvent;
+import com.n4d3sh1k4.security_service.dto.request_dto.LinkSocialRequest;
 import com.n4d3sh1k4.security_service.dto.request_dto.LoginRequest;
 import com.n4d3sh1k4.security_service.dto.request_dto.RegisterRequest;
 import com.n4d3sh1k4.security_service.jwt.JwtProvider;
@@ -47,6 +50,7 @@ public class AuthService {
     private final RoleRepository roleRepository;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final VerificationTokenRepository verificationTokenRepository;
+    private final UserIdentityRepository userIdentityRepository;
 
     private final RefreshTokenService refreshTokenService;
 
@@ -247,5 +251,31 @@ public class AuthService {
         userRepository.save(user);
         refreshTokenService.deleteByUser(user);
         passwordResetTokenRepository.delete(resetToken);
+    }
+
+    @Transactional
+    public AuthServiceResult linkSocialAccount(LinkSocialRequest request) {
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
+
+        boolean exists = userIdentityRepository.findByProviderAndProviderUserId(request.getProvider(), request.getProviderUserId()).isPresent();
+        
+        if (!exists) {
+            UserIdentity identity = new UserIdentity();
+            identity.setUser(user);
+            identity.setProvider(request.getProvider());
+            identity.setProviderUserId(request.getProviderUserId());
+            userIdentityRepository.save(identity);
+            log.info("Successfully linked {} identity to user {}", request.getProvider(), user.getEmail());
+        }
+
+        return new AuthServiceResult(
+                jwtProvider.generateAccessToken(user),
+                cookieUtils.generateRefreshTokenCookie(user, true).toString()
+        );
     }
 }

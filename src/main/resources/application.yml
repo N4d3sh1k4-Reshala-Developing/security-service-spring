@@ -93,3 +93,9 @@ email:
   resend:
     activated:
       time: 5
+
+app:
+  default-admin:
+    username: ${DEFAULT_ADMIN_USERNAME}
+    email: ${DEFAULT_ADMIN_EMAIL}
+    password: ${DEFAULT_ADMIN_PASSWORD}

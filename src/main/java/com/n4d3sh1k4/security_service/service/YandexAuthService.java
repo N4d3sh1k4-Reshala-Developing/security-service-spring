@@ -1,5 +1,6 @@
 package com.n4d3sh1k4.security_service.service;
 
+import com.n4d3sh1k4.security_service.domain.model.users.AuthProvider;
 import com.n4d3sh1k4.security_service.domain.model.users.User;
 import com.n4d3sh1k4.security_service.dto.AuthServiceResult;
 import com.n4d3sh1k4.security_service.jwt.JwtProvider;
@@ -23,11 +24,12 @@ public class YandexAuthService {
     public AuthServiceResult authenticateMobile(String yandexAccessToken) {
         Map<String, Object> attributes = fetchYandexUserInfo(yandexAccessToken);
 
+        String id = (String) attributes.get("id");
         String email = (String) attributes.get("default_email");
         String firstName = (String) attributes.get("first_name");
         String lastName = (String) attributes.get("last_name");
 
-        User user = userService.processOAuthPostLogin(email.toLowerCase(), firstName, lastName);
+        User user = userService.processOAuthPostLogin(AuthProvider.YANDEX, id, email.toLowerCase(), firstName, lastName);
 
         String accessToken = jwtProvider.generateAccessToken(user);
         ResponseCookie refreshTokenCookie = cookieUtils.generateRefreshTokenCookie(user, true);

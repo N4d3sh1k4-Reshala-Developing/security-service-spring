@@ -26,6 +26,10 @@ services:
       - JWT_ACCESS_SECRET=${JWT_SECRET}
       - COOKIE_SECURE=true
 
+      - DEFAULT_ADMIN_EMAIL=${DEFAULT_ADMIN_EMAIL}
+      - DEFAULT_ADMIN_USERNAME=${DEFAULT_ADMIN_USERNAME}
+      - DEFAULT_ADMIN_PASSWORD=${DEFAULT_ADMIN_PASSWORD}
+
     networks:
       - reshala-net
     restart: unless-stopped

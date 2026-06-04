@@ -32,6 +32,9 @@ public class User {
     @Column(name = "auth_provider")
     private AuthProvider provider = AuthProvider.LOCAL;
 
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private java.util.List<UserIdentity> identities = new java.util.ArrayList<>();
+
     @Column(name = "username")
     private String username;
 

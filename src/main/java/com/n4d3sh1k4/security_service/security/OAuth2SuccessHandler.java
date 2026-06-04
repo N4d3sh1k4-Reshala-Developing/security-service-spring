@@ -1,6 +1,8 @@
 package com.n4d3sh1k4.security_service.security;
 
+import com.n4d3sh1k4.security_service.domain.model.users.AuthProvider;
 import com.n4d3sh1k4.security_service.domain.model.users.User;
+import com.n4d3sh1k4.security_service.exception.OAuthEmailAlreadyExistsException;
 import com.n4d3sh1k4.security_service.jwt.JwtProvider;
 import com.n4d3sh1k4.security_service.service.AuthService;
 import com.n4d3sh1k4.security_service.service.UserService;
@@ -55,14 +57,22 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         firstName = (firstName != null) ? firstName.trim() : "";
         lastName = (lastName != null) ? lastName.trim() : "";
 
-        User user = userService.processOAuthPostLogin(email, firstName, lastName);
+        String id = oAuth2User.getAttribute("id");
 
-        String accessToken = jwtProvider.generateAccessToken(user);
-        ResponseCookie refreshTokenCookie = cookieUtils.generateRefreshTokenCookie(user, true);
+        try {
+            User user = userService.processOAuthPostLogin(AuthProvider.YANDEX, id, email, firstName, lastName);
 
-        response.addHeader(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString());
+            String accessToken = jwtProvider.generateAccessToken(user);
+            ResponseCookie refreshTokenCookie = cookieUtils.generateRefreshTokenCookie(user, true);
 
-        String targetUrl = "http://localhost:3000/oauth-callback?token=" + accessToken;
-        response.sendRedirect(targetUrl);
+            response.addHeader(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString());
+
+            String targetUrl = "http://localhost:3000/oauth-callback?token=" + accessToken;
+            response.sendRedirect(targetUrl);
+        } catch (OAuthEmailAlreadyExistsException e) {
+            String targetUrl = String.format("http://localhost:3000/login?error=email_exists_link_required&email=%s&provider=%s&providerUserId=%s",
+                    e.getEmail(), e.getProvider().name(), e.getProviderUserId());
+            response.sendRedirect(targetUrl);
+        }
     }
 }

@@ -183,4 +183,24 @@ public class AuthController {
                 .header(HttpHeaders.SET_COOKIE, result.getCookie())
                 .body(new JwtResponse(result.getAccessToken()));
     }
+
+    @ExceptionHandler(com.n4d3sh1k4.security_service.exception.OAuthEmailAlreadyExistsException.class)
+    public ResponseEntity<?> handleOAuthEmailAlreadyExists(com.n4d3sh1k4.security_service.exception.OAuthEmailAlreadyExistsException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(java.util.Map.of(
+                        "error", "email_exists_link_required",
+                        "email", ex.getEmail(),
+                        "provider", ex.getProvider().name(),
+                        "providerUserId", ex.getProviderUserId()
+                ));
+    }
+
+    @Operation(summary = "Привязка соцсети", description = "Привязывает соцсеть к аккаунту после ввода пароля.")
+    @PostMapping("/link-social")
+    public ResponseEntity<?> linkSocial(@Valid @RequestBody LinkSocialRequest request) {
+        AuthServiceResult result = authService.linkSocialAccount(request);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, result.getCookie())
+                .body(new JwtResponse(result.getAccessToken()));
+    }
 }
