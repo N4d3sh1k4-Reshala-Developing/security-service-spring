@@ -30,7 +30,7 @@ public class JwtProvider {
                 .subject(user.getId().toString())
                 .claim("roles", user.getRoles().stream().map(r -> "ROLE_" + r.getName()).toList())
                 .issuedAt(new Date())
-                .expiration(Date.from(Instant.now().plus(15, ChronoUnit.MINUTES)))
+                .expiration(Date.from(Instant.now().plus(5, ChronoUnit.MINUTES)))
                 .signWith(jwtAccessSecret)
                 .compact();
     }

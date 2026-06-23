@@ -51,14 +51,11 @@ public class AuthService {
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final VerificationTokenRepository verificationTokenRepository;
     private final UserIdentityRepository userIdentityRepository;
-
     private final RefreshTokenService refreshTokenService;
-
     private final PasswordEncoder passwordEncoder;
     private final JwtProvider jwtProvider;
     private final CookieUtils cookieUtils;
     private final AuthenticationManager authenticationManager;
-
     private final ApplicationEventPublisher eventPublisher;
 
 

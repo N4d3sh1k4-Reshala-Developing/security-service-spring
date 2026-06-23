@@ -34,7 +34,8 @@ public class UserService {
         return userRepository.findById(UUID.fromString(userId))
             .map(user -> new UserRequest(
                     user.getUsername(),
-                    user.getEmail()
+                    user.getEmail(),
+                    user.getIdentities()
             ))
             .orElseThrow(() -> new UserNotFoundException(
                     "User with id " + userId + " not found"
