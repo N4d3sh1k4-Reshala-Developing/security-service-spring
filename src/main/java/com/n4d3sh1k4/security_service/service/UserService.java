@@ -8,7 +8,6 @@ import com.n4d3sh1k4.security_service.domain.repository.UserIdentityRepository;
 import com.n4d3sh1k4.security_service.domain.repository.UserRepository;
 import com.n4d3sh1k4.security_service.domain.model.users.UserIdentity;
 import com.n4d3sh1k4.security_service.dto.event.NotificationEmailEvent;
-import com.n4d3sh1k4.security_service.dto.event.NotificationEmailMessage;
 import com.n4d3sh1k4.security_service.dto.request_dto.UserRequest;
 import com.n4d3sh1k4.security_service.exception.OAuthEmailAlreadyExistsException;
 import jakarta.transaction.Transactional;
@@ -17,8 +16,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
-import java.util.Locale;
-import java.util.Map;
 import java.util.UUID;
 
 @Slf4j

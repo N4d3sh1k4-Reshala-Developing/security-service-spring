@@ -10,12 +10,12 @@ import java.lang.annotation.Target;
 
 @Target({ ElementType.TYPE })
 @Retention(RetentionPolicy.RUNTIME)
-@Constraint(validatedBy = GenericPasswordMatchValidator.class) // Указываем новый валидатор
+@Constraint(validatedBy = GenericPasswordMatchValidator.class)
 public @interface PasswordMatch {
     String message() default "Passwords do not match";
 
-    String passwordField() default "password";        // Имя основного поля
-    String confirmPasswordField() default "confirmPassword"; // Имя поля подтверждения
+    String passwordField() default "password";
+    String confirmPasswordField() default "confirmPassword";
 
     Class<?>[] groups() default {};
     Class<? extends Payload>[] payload() default {};
