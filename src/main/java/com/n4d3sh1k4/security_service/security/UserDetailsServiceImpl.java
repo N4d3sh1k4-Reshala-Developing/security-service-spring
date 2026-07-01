@@ -21,14 +21,17 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     }
 
     @Override
-    //Найти пользователя по почте
     public @NonNull UserDetails loadUserByUsername(@NonNull String email) throws UsernameNotFoundException {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + email));
+        String password = user.getPasswordHash();
+        if (password == null) {
+            password = "{noop}[OAUTH2_USER_WITHOUT_PASSWORD]";
+        }
 
         return org.springframework.security.core.userdetails.User.builder()
                 .username(user.getEmail())
-                .password(user.getPasswordHash())
+                .password(password)
                 .authorities(user.getRoles().stream()
                         .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName()))
                         .collect(Collectors.toList()))
