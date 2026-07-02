@@ -3,7 +3,6 @@ package com.n4d3sh1k4.security_service.service;
 import com.n4d3sh1k4.security_service.domain.model.security.RefreshToken;
 import com.n4d3sh1k4.security_service.domain.model.users.User;
 import com.n4d3sh1k4.security_service.domain.repository.RefreshTokenRepository;
-import com.n4d3sh1k4.security_service.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -11,7 +10,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Date;
 import java.util.Optional;
 import java.util.UUID;
 
