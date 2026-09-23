@@ -4,11 +4,11 @@ import lombok.Data;
 
 @Data
 public class AuthServiceResult {
-    private String accessToken;
+    private String accesToken;
     private String cookie;
 
     public AuthServiceResult(String accesToken, String cookie) {
-        this.accessToken = accesToken;
+        this.accesToken = accesToken;
         this.cookie = cookie;
     }
 

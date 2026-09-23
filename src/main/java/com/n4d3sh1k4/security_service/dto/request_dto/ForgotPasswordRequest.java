@@ -10,6 +10,7 @@ import lombok.Data;
 @Data
 public class ForgotPasswordRequest {
 
+    @Schema(description = "Email для восстановления пароля", example = "user@example.com")
     @NotBlank
     @Email
     @Size(max = 50)

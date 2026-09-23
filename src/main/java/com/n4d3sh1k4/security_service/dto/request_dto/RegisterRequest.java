@@ -1,5 +1,6 @@
 package com.n4d3sh1k4.security_service.dto.request_dto;
 
+import com.n4d3sh1k4.security_service.dto.validation.RussianEmail;
 import com.n4d3sh1k4.security_service.dto.validation.PasswordMatch;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
@@ -12,8 +13,25 @@ import lombok.Data;
 @Data
 @PasswordMatch
 public class RegisterRequest {
+
+    @Schema(description = "Имя пользователя", example = "Олег")
+    @NotBlank
+    @Size(min = 2, max = 50)
+    @Pattern(regexp = "^[а-яА-ЯёЁ]+(-[а-яА-ЯёЁ]+)?$",
+             message = "The name must be in Cyrillic and may contain a hyphen.")
+    private String firstName;
+
+    @Schema(description = "Фамилия пользователя", example = "Иванов")
+    @NotBlank
+    @Size(min = 2, max = 50)
+    @Pattern(regexp = "^[а-яА-ЯёЁ]+(-[а-яА-ЯёЁ]+)?$",
+             message = "The surname must be in Cyrillic and may contain a hyphen.")
+    private String lastName;
+
+    @Schema(description = "Email пользователя", example = "user@example.com")
     @NotBlank(message = "Email is required")
     @Email(message = "Invalid email format")
+    @RussianEmail
     @Size(max = 50)
     private String email;
 

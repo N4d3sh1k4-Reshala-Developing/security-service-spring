@@ -8,7 +8,6 @@ import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.servers.Server;
-import org.springdoc.core.models.GroupedOpenApi;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -21,19 +20,19 @@ public class OpenApiConfig {
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
                 .info(new Info()
-                        .title("Reshala Security-Service API")
-                        .description("Main security service")
-                        .version("1.5.2")
+                        .title("Security Service API")
+                        .description("Responsible for secure manipulation of user accounts.")
+                        .version("0.3.0")
                         .contact(new Contact()
                                 .name("Mihail Krivosheev")
                                 .url("https://github.com/NEXUSPROGECT")))
 
                 .servers(List.of(
                         new Server()
-                                .url("https://api.reshala.n4d3sh1k4.site/api/v0")
+                                .url("https://api.ucust.n4d3sh1k4.site/api/v0")
                                 .description("Production"),
                         new Server()
-                                .url("http://localhost:8180/api/v0")
+                                .url("http://localhost:8100/api/v0")
                                 .description("Local Environment")
                 ))
 

@@ -1,8 +1,8 @@
 package com.n4d3sh1k4.security_service.dto.validation;
 
-import org.springframework.beans.BeanWrapperImpl;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
+import org.springframework.beans.BeanWrapperImpl;
 
 public class GenericPasswordMatchValidator implements ConstraintValidator<PasswordMatch, Object> {
 

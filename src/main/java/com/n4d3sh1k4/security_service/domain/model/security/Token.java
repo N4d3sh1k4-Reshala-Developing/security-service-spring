@@ -3,23 +3,25 @@ package com.n4d3sh1k4.security_service.domain.model.security;
 import com.n4d3sh1k4.security_service.domain.model.users.User;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
-import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "verification_token")
+@Table(name = "tokens")
 @EntityListeners(AuditingEntityListener.class)
 @Data
-@AllArgsConstructor
+@Builder
 @NoArgsConstructor
-public class VerificationToken {
+@AllArgsConstructor
+public class Token {
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "id")
@@ -38,4 +40,18 @@ public class VerificationToken {
 
     @Column(nullable = false)
     private Instant expiryDate;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "type", nullable = false)
+    private TokenType type;
+
+    @Column(name = "new_email")
+    private String newEmail;
+
+    @Column(name = "code")
+    private String code;
+
+    public boolean isExpired() {
+        return Instant.now().isAfter(expiryDate);
+    }
 }

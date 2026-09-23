@@ -9,6 +9,7 @@ import lombok.Data;
 @Schema(description = "Сущность для авторизации")
 @Data
 public class LoginRequest {
+    @Schema(description = "Email пользователя", example = "user@example.com")
     @NotBlank
     @Email
     @Size(max = 50)

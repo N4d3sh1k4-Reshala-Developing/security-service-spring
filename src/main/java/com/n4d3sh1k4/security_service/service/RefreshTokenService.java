@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -24,6 +25,10 @@ public class RefreshTokenService {
         return refreshTokenRepository.findByToken(token);
     }
 
+    public List<RefreshToken> findAllByUserId(UUID userId) {
+        return refreshTokenRepository.findAllByUserId(userId);
+    }
+
     @Transactional
     public void deleteByUser(User user) {
         refreshTokenRepository.deleteByUser(user);
@@ -31,19 +36,34 @@ public class RefreshTokenService {
     }
 
     @Transactional
-    public void deleteByToken(String token) {refreshTokenRepository.deleteByToken(token);}
+    public void deleteByToken(String token) {
+        refreshTokenRepository.deleteByToken(token);
+    }
 
     @Transactional
-    public RefreshToken createRefreshToken(User user, boolean rememberMe) {
-        refreshTokenRepository.deleteByUser(user);
+    public void deleteByUserIdExceptToken(UUID userId, String currentToken) {
+        refreshTokenRepository.deleteByUserIdExceptToken(userId, currentToken);
+        log.info("All refresh tokens for user {} except current session revoked", userId);
+    }
 
+    @Transactional
+    public void deleteSessionById(UUID userId, UUID sessionId, String currentToken) {
+        refreshTokenRepository.deleteSessionById(userId, sessionId, currentToken);
+        log.info("Session {} for user {} revoked", sessionId, userId);
+    }
+
+    @Transactional
+    public RefreshToken createRefreshToken(User user, boolean rememberMe, String userAgent, String ip, String city) {
         RefreshToken refreshToken = new RefreshToken();
         refreshToken.setUser(user);
         refreshToken.setToken(UUID.randomUUID().toString());
 
-        Instant expiry = rememberMe ? Instant.now().plus(7, ChronoUnit.DAYS) : Instant.now().plus(1, ChronoUnit.DAYS);
+        Instant expiry = rememberMe ? Instant.now().plus(30, ChronoUnit.DAYS) : Instant.now().plus(1, ChronoUnit.DAYS);
         refreshToken.setExpiryDate(expiry);
         refreshToken.setRememberMe(rememberMe);
+        refreshToken.setUserAgent(userAgent);
+        refreshToken.setIp(ip);
+        refreshToken.setCity(city);
 
         return refreshTokenRepository.save(refreshToken);
     }

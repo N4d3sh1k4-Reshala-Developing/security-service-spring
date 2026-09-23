@@ -15,7 +15,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: true
+    show-sql: false
 
   rabbitmq:
     host: localhost
@@ -29,26 +29,6 @@ spring:
         initial-interval: 1000ms
         max-attempts: 3
 
-  security:
-    oauth2:
-      client:
-        registration:
-          yandex:
-            client-id: 5e58d1a8f2f141df8928574f01b6e152
-            client-secret: 637fb18431784d97be2afc104e2786b9
-            client-name: Yandex
-            authorization-grant-type: authorization_code
-            redirect-uri: "http://localhost:8180/api/v0/login/oauth2/code/{registrationId}"
-            scope:
-              - login:email
-              - login:info
-        provider:
-          yandex:
-            authorization-uri: https://oauth.yandex.ru/authorize
-            token-uri: https://oauth.yandex.ru/token
-            user-info-uri: https://login.yandex.ru/info
-            user-name-attribute: id
-
 server:
   port: 8181
   forward-headers-strategy: native
@@ -56,7 +36,6 @@ server:
 eureka:
   client:
     service-url:
-      # Подставили юзера, пароль и хост прямо в url строки
       defaultZone: http://eureka-user:zvBGTYdMUJV7mpRs35YA@localhost:8761/eureka/
     register-with-eureka: true
     fetch-registry: true
@@ -64,7 +43,6 @@ eureka:
     prefer-ip-address: true
     ip-address: 127.0.0.1
     hostname: localhost
-    # Внутренние ссылки на свойства самого Spring (как spring.application.name) оставляем, они безопасны
     instance-id: ${spring.application.name}:${server.port}
 
 jwt:
@@ -74,9 +52,14 @@ jwt:
 logging:
   level:
     root: INFO
-    org.hibernate.SQL: DEBUG
-    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.hibernate.SQL: INFO
+    org.hibernate.type.descriptor.sql.BasicBinder: INFO
     org.springframework.web: DEBUG
+  logback:
+    rollingpolicy:
+      max-file-size: 10MB
+      max-history: 7
+      total-size-cap: 100MB
 
 management:
   endpoints:
@@ -91,13 +74,35 @@ cookie:
   secure:
     state: false
 
-email:
-  resend:
-    activated:
-      time: 5
-
 app:
+  oauth2:
+    redirect-uri: http://localhost:8180/api/v0/login/oauth2/code/{registrationId}
+  frontend-url: http://localhost:3000
+  geo:
+    api-url: http://ip-api.com/json/{ip}?lang=ru&fields=status,country,city
   default-admin:
-    username: "adminchik123"
     email: "admin@example.com"
     password: "adminTop@@#123"
+
+email:
+  send:
+    cooldown: 1
+
+token:
+  activation:
+    activate:
+      ttl: 15
+    resend:
+      ttl: 15
+  password:
+    reset:
+      ttl: 5
+  refresh:
+    isremember:
+      ttl: 30d
+    noremember:
+      ttl: 1d
+
+account:
+  locked:
+    cooldown: 5

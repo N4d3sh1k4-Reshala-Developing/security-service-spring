@@ -11,6 +11,7 @@ import lombok.Data;
 @Schema(description = "Сущность для линка стороннего провайдера авторизации")
 @Data
 public class LinkSocialRequest {
+    @Schema(description = "Email пользователя", example = "user@example.com")
     @NotBlank
     @Email
     @Size(max = 50)
@@ -21,9 +22,11 @@ public class LinkSocialRequest {
     @Size(max = 50)
     private String password;
 
+    @Schema(description = "Провайдер авторизации")
     @NotNull
     private AuthProvider provider;
 
+    @Schema(description = "ID пользователя у провайдера", example = "123456789")
     @NotBlank
     private String providerUserId;
 }

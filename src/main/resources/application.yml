@@ -15,7 +15,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: true
+    show-sql: false
 
   rabbitmq:
     host: ${RABBIT_HOST:localhost}
@@ -28,26 +28,6 @@ spring:
         enabled: true
         initial-interval: 1000ms
         max-attempts: 3
-
-  security:
-    oauth2:
-      client:
-        registration:
-          yandex:
-            client-id: ${YANDEX_CLIENT_ID}
-            client-secret: ${YANDEX_CLIENT_SECRET}
-            client-name: Yandex
-            authorization-grant-type: authorization_code
-            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
-            scope:
-              - login:email
-              - login:info
-        provider:
-          yandex:
-            authorization-uri: https://oauth.yandex.ru/authorize
-            token-uri: https://oauth.yandex.ru/token
-            user-info-uri: https://login.yandex.ru/info
-            user-name-attribute: id
 
 server:
   port: 8181
@@ -72,9 +52,12 @@ jwt:
 logging:
   level:
     root: INFO
-    org.hibernate.SQL: DEBUG
-    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
-    org.springframework.web: DEBUG
+    org.springframework.web: INFO
+  logback:
+    rollingpolicy:
+      max-file-size: 10MB
+      max-history: 7
+      total-size-cap: 100MB
 
 management:
   endpoints:
@@ -89,13 +72,35 @@ cookie:
   secure:
     state: ${COOKIE_SECURE:false}
 
-email:
-  resend:
-    activated:
-      time: 5
-
 app:
+  oauth2:
+    redirect-uri: ${OAUTH2_REDIRECT_URI:http://localhost:8180/api/v0/login/oauth2/code/{registrationId}}
+  frontend-url: ${FRONTEND_URL:http://localhost:3000}
+  geo:
+    api-url: ${GEO_API_URL:http://ip-api.com/json/{ip}?lang=ru&fields=status,country,city}
   default-admin:
-    username: ${DEFAULT_ADMIN_USERNAME}
     email: ${DEFAULT_ADMIN_EMAIL}
     password: ${DEFAULT_ADMIN_PASSWORD}
+
+email:
+  send:
+    cooldown: 1
+
+token:
+  activation:
+    activate:
+      ttl: 15
+    resend:
+      ttl: 15
+  password:
+    reset:
+      ttl: 5
+  refresh:
+    isremember:
+      ttl: 30d
+    noremember:
+      ttl: 1d
+
+account:
+  locked:
+    cooldown: 5

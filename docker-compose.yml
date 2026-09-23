@@ -1,3 +1,5 @@
+name: reshala-containers
+
 services:
   security-service:
     image: ghcr.io/${IMAGE_NAME}:latest
@@ -30,6 +32,11 @@ services:
       - DEFAULT_ADMIN_USERNAME=${DEFAULT_ADMIN_USERNAME}
       - DEFAULT_ADMIN_PASSWORD=${DEFAULT_ADMIN_PASSWORD}
 
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
     networks:
       - reshala-net
     restart: unless-stopped

@@ -7,8 +7,8 @@ import com.n4d3sh1k4.security_service.domain.model.users.User;
 import com.n4d3sh1k4.security_service.domain.repository.PrivilegeRepository;
 import com.n4d3sh1k4.security_service.domain.repository.RoleRepository;
 import com.n4d3sh1k4.security_service.domain.repository.UserRepository;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -25,9 +25,6 @@ public class DataInitializer implements CommandLineRunner {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder; // Из Spring Security для хэширования
 
-    @Value("${app.default-admin.username}")
-    private String adminUsername;
-
     @Value("${app.default-admin.email}")
     private String adminEmail;
 
@@ -35,10 +32,10 @@ public class DataInitializer implements CommandLineRunner {
     private String adminPassword;
 
     @Override
-    @Transactional
-    public void run(String... args) {
+    public void run(String @NonNull ... args) {
 
         if (roleRepository.count() == 0) {
+
             Privilege read = privilegeRepository.save(new Privilege("USER_READ"));
             Privilege write = privilegeRepository.save(new Privilege("USER_WRITE"));
 
@@ -51,7 +48,6 @@ public class DataInitializer implements CommandLineRunner {
             adminRole = roleRepository.save(adminRole);
 
             User admin = new User();
-            admin.setUsername(adminUsername);
             admin.setEmail(adminEmail);
             admin.setPasswordHash(passwordEncoder.encode(adminPassword));
             admin.setProvider(AuthProvider.LOCAL);
