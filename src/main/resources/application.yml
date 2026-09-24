@@ -52,7 +52,7 @@ jwt:
 logging:
   level:
     root: TRACE
-    org.springframework.web: TRACE
+    org.springframework.web: INFO
   logback:
     rollingpolicy:
       max-file-size: 10MB
