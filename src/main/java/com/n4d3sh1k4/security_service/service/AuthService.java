@@ -262,8 +262,11 @@ public class AuthService {
 
     @Transactional
     public void createPasswordResetToken(String email) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UserNotFoundException("User with this email not found."));
+        User user = userRepository.findByEmail(email).orElse(null);
+        if (user == null) {
+            log.warn("Password reset requested for unknown email: {}", email);
+            return;
+        }
 
         tokenRepository.findByUserAndType(user, TokenType.PASSWORD_RESET).ifPresent(t -> {
             if (t.getCreatedAt().isAfter(LocalDateTime.now().minusMinutes(Long.parseLong(accountActivationEmailResendCooldown)))) {
