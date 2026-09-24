@@ -55,21 +55,28 @@ public class AuthController {
 
     @Operation(summary = "Регистрация пользователей", description = "Позволяет добавить пользователя в систему. После регистрации возвращает клиенту пару ключей авторизации: acces в body и refresh в куки.")
     @PostMapping("/register")
-    public ResponseEntity<Object> register(@Valid @RequestBody RegisterRequest req) {
+    public ResponseEntity<Object> register(@Valid @RequestBody RegisterRequest req, HttpServletRequest request) {
+        String ip = ClientIpUtils.resolve(request);
+        log.info("Register attempt: email={}, ip={}, ua={}", req.getEmail(), ip, request.getHeader("User-Agent"));
         authService.registerUser(req);
         return ResponseEntity.ok().build();
     }
 
     @Operation(summary = "Эндпоинт подтверждения почты пользователя", description = "Позволяет пользователю \"активировать\" свой аккаунт при переходе по ссылке")
     @GetMapping("/confirm-email")
-    public ResponseEntity<?> confirmRegistration(@RequestParam("token") String token) {
+    public ResponseEntity<?> confirmRegistration(@RequestParam("token") String token, HttpServletRequest request) {
+        String ip = ClientIpUtils.resolve(request);
+        log.info("Email confirmation attempt: ip={}", ip);
         authService.activateUser(token);
+        log.info("Email confirmation success: ip={}", ip);
         return ResponseEntity.ok().build();
     }
 
     @Operation(summary = "Повторная отправка сообщения дла активации акканут на почту пользователя", description = "Позволяет пользователю переотправить ссылку на почту для \"активировации\" аккаунта")
     @PostMapping("/resend-confirmation")
-    public ResponseEntity<?> resendToken(@RequestParam("email") String email) {
+    public ResponseEntity<?> resendToken(@RequestParam("email") String email, HttpServletRequest request) {
+        String ip = ClientIpUtils.resolve(request);
+        log.info("Confirmation resend attempt: email={}, ip={}", email, ip);
         authService.resendConfirmToken(email);
         return ResponseEntity.ok().build();
 
@@ -78,13 +85,15 @@ public class AuthController {
     @Operation(summary = "Авторизация пользователей", description = "Позволяет авторизоваться пользователю в системе. После авторизации возвращает клиенту пару ключей авторизации: acces в body и refresh в куки.")
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest loginRequest, HttpServletRequest request) {
+        String ip = ClientIpUtils.resolve(request);
+        String userAgent = request.getHeader("User-Agent");
+        log.info("Login attempt: email={}, ip={}, ua={}", loginRequest.getEmail(), ip, userAgent);
+
         Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword()));
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        String ip = ClientIpUtils.resolve(request);
-        String userAgent = request.getHeader("User-Agent");
-
         AuthServiceResult result = authService.loginUser(loginRequest, ip, userAgent);
+        log.info("Login success: email={}", loginRequest.getEmail());
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, result.getCookie())
                 .body(new JwtResponse(result.getAccesToken()));
@@ -126,6 +135,7 @@ public class AuthController {
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(@CookieValue(name = "refreshToken", required = false) String refreshToken, Principal principal) {
         String userId = principal.getName();
+        log.info("Logout: userId={}", userId);
         AuthServiceResult result = authService.logoutUser(userId, refreshToken);
 
         return ResponseEntity.ok()
@@ -135,14 +145,18 @@ public class AuthController {
 
     @Operation(summary = "Смена/Восстановление пароля Шаг 1", description = "Принимает почту пользователя и отправляет на неё письмо для восстановления пароля.")
     @PostMapping("/forgot-password")
-    public ResponseEntity<?> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+    public ResponseEntity<?> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request, HttpServletRequest httpRequest) {
+        String ip = ClientIpUtils.resolve(httpRequest);
+        log.info("Password reset step1 attempt: email={}, ip={}", request.getEmail(), ip);
         authService.createPasswordResetToken(request.getEmail());
         return ResponseEntity.ok().build();
     }
 
     @Operation(summary = "Смена/Восстановление пароля Шаг 2", description = "Позволяет сменить пароль при наличии токена из письма с почты.")
     @PostMapping("/reset-password")
-    public ResponseEntity<?> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+    public ResponseEntity<?> resetPassword(@Valid @RequestBody ResetPasswordRequest request, HttpServletRequest httpRequest) {
+        String ip = ClientIpUtils.resolve(httpRequest);
+        log.info("Password reset step2 attempt: ip={}", ip);
         authService.resetPassword(request.getToken(), request.getNewPassword());
         return ResponseEntity.ok().build();
     }

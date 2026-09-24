@@ -48,6 +48,7 @@ public class YandexAuthService {
         String accessToken = jwtProvider.generateAccessToken(user, city);
         ResponseCookie refreshTokenCookie = cookieUtils.generateRefreshTokenCookie(user, true, userAgent, ip, city);
 
+        log.info("Yandex mobile login succeeded: userId={}, email={}", user.getId(), email.toLowerCase());
         return new AuthServiceResult(accessToken, refreshTokenCookie.toString());
     }
 

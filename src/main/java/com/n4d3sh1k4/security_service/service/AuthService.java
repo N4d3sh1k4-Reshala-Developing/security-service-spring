@@ -107,6 +107,8 @@ public class AuthService {
                 tokenValue,
                 accountActivationTokenTtl
         ));
+
+        log.info("User registered: userId={}, email={}", user.getId(), user.getEmail());
     }
 
     @Transactional
@@ -192,6 +194,8 @@ public class AuthService {
         outboxPublisher.publish("user.login.email",
                 new LoginEvent(user.getEmail(), ipAddress, userAgent, Instant.now(), city));
 
+        log.info("Login success: userId={}, email={}, ip={}", user.getId(), user.getEmail(), ipAddress);
+
         return new AuthServiceResult(
                 jwtProvider.generateAccessToken(user, city),
                 cookieUtils.generateRefreshTokenCookie(user, req.isRememberMe(), userAgent, ipAddress, city).toString()
@@ -231,6 +235,7 @@ public class AuthService {
         User user = oldToken.getUser();
         boolean rememberMe = oldToken.isRememberMe();
 
+        log.info("Token refresh: userId={}, email={}, ip={}", user.getId(), user.getEmail(), ip);
         refreshTokenService.deleteByToken(refreshToken);
 
         String city = userGeoService.resolveCity(ip);
@@ -252,6 +257,7 @@ public class AuthService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
 
+        log.info("OAuth bootstrap: userId={}, email={}, ip={}", user.getId(), user.getEmail(), ip);
         String city = userGeoService.resolveCity(ip);
 
         return new AuthServiceResult(
@@ -286,6 +292,8 @@ public class AuthService {
         tokenRepository.save(resetToken);
 
         eventPublisher.publishEvent(new PasswordResetEvent(user.getEmail(), tokenValue, passwordResetTokenTtl));
+
+        log.info("Password reset token issued: userId={}, email={}, ttl={}min", user.getId(), user.getEmail(), passwordResetTokenTtl);
     }
 
     @Transactional
@@ -302,6 +310,8 @@ public class AuthService {
         userRepository.save(user);
         refreshTokenService.deleteByUser(user);
         tokenRepository.delete(resetToken);
+
+        log.info("Password reset completed: userId={}, email={}", user.getId(), user.getEmail());
     }
 
     @Transactional

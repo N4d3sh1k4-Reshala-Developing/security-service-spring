@@ -11,9 +11,6 @@ public class RequestLoggingConfig {
     public CommonsRequestLoggingFilter requestLoggingFilter() {
         CommonsRequestLoggingFilter filter = new CommonsRequestLoggingFilter();
         filter.setIncludeQueryString(true);
-        filter.setIncludePayload(true);
-        filter.setMaxPayloadLength(10000);
-        filter.setIncludeHeaders(true);
         filter.setIncludeClientInfo(true);
         filter.setAfterMessagePrefix("REQUEST: ");
         return filter;
