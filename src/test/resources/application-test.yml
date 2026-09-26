@@ -1,0 +1,27 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5430/postgres_db
+    username: postgres
+    password: password
+
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: system-user
+    password: systempass
+    virtual-host: system-service
+
+eureka:
+  client:
+    enabled: false
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+
+jwt:
+  secret:
+    access: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
+
+app:
+  default-admin:
+    email: admin@test.local
+    password: AdminPass123!
