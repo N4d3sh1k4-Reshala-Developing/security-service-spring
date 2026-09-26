@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "Пользователи", description = "Управление пользователями")
 @RestController
-@RequestMapping("/users")
+@RequestMapping("/user")
 public class UserController {
 
     @SecurityRequirement(name = "bearerAuth")
