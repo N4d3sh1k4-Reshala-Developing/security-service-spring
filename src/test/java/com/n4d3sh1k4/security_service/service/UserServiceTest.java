@@ -109,6 +109,7 @@ class UserServiceTest {
                 "User@Example.com", "  Иван  ", "Петров", "+70000000000");
 
         assertThat(result.getEmail()).isEqualTo("user@example.com");
+        assertThat(result.getUsername()).isEqualTo("Иван Петров");
         assertThat(result.getPasswordHash()).isNull();
         assertThat(result.getEnabled()).isTrue();
         assertThat(result.getRoles()).extracting(Role::getName).containsExactly("USER");
@@ -124,14 +125,12 @@ class UserServiceTest {
         verify(eventPublisher).publishEvent(eventCaptor.capture());
         UserRegisteredInternalEvent event = eventCaptor.getValue();
         assertThat(event.id()).isEqualTo(result.getId());
-        assertThat(event.firstName()).isEqualTo("Иван");
-        assertThat(event.lastName()).isEqualTo("Петров");
         assertThat(event.email()).isEqualTo("user@example.com");
         assertThat(event.phone()).isEqualTo("+70000000000");
     }
 
     @Test
-    void processOAuthPostLogin_whenNameBlank_usesEmailPrefixAsFirstName() {
+    void processOAuthPostLogin_whenNamesBlank() {
         when(userIdentityRepository.findByProviderAndProviderUserId(AuthProvider.YANDEX, "ya-2"))
                 .thenReturn(Optional.empty());
         when(userRepository.findByEmail("ivan@example.com")).thenReturn(Optional.empty());
@@ -142,15 +141,15 @@ class UserServiceTest {
             return u;
         });
 
-        userService.processOAuthPostLogin(AuthProvider.YANDEX, "ya-2",
+        User result = userService.processOAuthPostLogin(AuthProvider.YANDEX, "ya-2",
                 "ivan@example.com", null, "", null);
+
+        assertThat(result.getUsername()).isEqualTo("ivan");
 
         ArgumentCaptor<UserRegisteredInternalEvent> eventCaptor =
                 ArgumentCaptor.forClass(UserRegisteredInternalEvent.class);
         verify(eventPublisher).publishEvent(eventCaptor.capture());
         UserRegisteredInternalEvent event = eventCaptor.getValue();
-        assertThat(event.firstName()).isEqualTo("ivan");
-        assertThat(event.lastName()).isEqualTo("");
         assertThat(event.email()).isEqualTo("ivan@example.com");
     }
 }

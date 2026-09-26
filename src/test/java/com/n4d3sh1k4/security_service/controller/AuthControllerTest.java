@@ -1,4 +1,4 @@
-﻿package com.n4d3sh1k4.security_service.controller;
+package com.n4d3sh1k4.security_service.controller;
 
 import com.n4d3sh1k4.common.exception.ContentNotFoundException;
 import com.n4d3sh1k4.common.exception.TooManyRequestsException;
@@ -6,7 +6,6 @@ import com.n4d3sh1k4.common.exception.TokenNotFoundException;
 import com.n4d3sh1k4.common.exception.UserAlreadyActivatedException;
 import com.n4d3sh1k4.common.exception.UserAlreadyExistsException;
 import com.n4d3sh1k4.common.exception.UserNotFoundException;
-import com.n4d3sh1k4.common.exception.BaseException;
 import com.n4d3sh1k4.security_service.domain.repository.RoleRepository;
 import com.n4d3sh1k4.security_service.domain.repository.UserRepository;
 import com.n4d3sh1k4.security_service.dto.AuthServiceResult;
@@ -17,6 +16,7 @@ import com.n4d3sh1k4.security_service.security.UserDetailsServiceImpl;
 import com.n4d3sh1k4.security_service.service.AuthService;
 import com.n4d3sh1k4.security_service.service.RefreshTokenService;
 import com.n4d3sh1k4.security_service.service.YandexAuthService;
+import com.n4d3sh1k4.security_service.service.VkAuthService;
 import com.n4d3sh1k4.security_service.utils.CookieUtils;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.Test;
@@ -48,7 +48,6 @@ import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -75,6 +74,9 @@ class AuthControllerTest {
     private YandexAuthService yandexAuthService;
 
     @MockitoBean
+    private VkAuthService vkAuthService;
+
+    @MockitoBean
     private RefreshTokenService refreshTokenService;
 
     @MockitoBean
@@ -98,8 +100,6 @@ class AuthControllerTest {
     private String validRegisterJson() {
         return """
                 {
-                  "firstName": "Иван",
-                  "lastName": "Иванов",
                   "email": "user@mail.ru",
                   "password": "Password#4848",
                   "confirmPassword": "Password#4848"
@@ -134,8 +134,6 @@ class AuthControllerTest {
     void register_weakPassword_returns400() throws Exception {
         String json = """
                 {
-                  "firstName": "Иван",
-                  "lastName": "Иванов",
                   "email": "user@mail.ru",
                   "password": "short",
                   "confirmPassword": "short"
@@ -155,8 +153,6 @@ class AuthControllerTest {
     void register_mismatchedPasswords_returns400() throws Exception {
         String json = """
                 {
-                  "firstName": "Иван",
-                  "lastName": "Иванов",
                   "email": "user@mail.ru",
                   "password": "Password#4848",
                   "confirmPassword": "Different#123"
@@ -171,30 +167,9 @@ class AuthControllerTest {
     }
 
     @Test
-    void register_latinName_returns400() throws Exception {
-        String json = """
-                {
-                  "firstName": "John",
-                  "lastName": "Иванов",
-                  "email": "user@mail.ru",
-                  "password": "Password#4848",
-                  "confirmPassword": "Password#4848"
-                }
-                """;
-
-        mockMvc.perform(post("/auth/register")
-                        .contentType("application/json")
-                        .content(json))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
-    }
-
-    @Test
     void register_foreignEmailDomain_returns400() throws Exception {
         String json = """
                 {
-                  "firstName": "Иван",
-                  "lastName": "Иванов",
                   "email": "user@gmail.com",
                   "password": "Password#4848",
                   "confirmPassword": "Password#4848"
@@ -532,7 +507,4 @@ class AuthControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
     }
-
-
-
 }

@@ -1,4 +1,4 @@
-﻿package com.n4d3sh1k4.security_service.service;
+package com.n4d3sh1k4.security_service.service;
 
 import com.n4d3sh1k4.common.exception.BaseException;
 import com.n4d3sh1k4.common.exception.ContentNotFoundException;
@@ -130,8 +130,6 @@ class AuthServiceTest {
 
     private RegisterRequest registerRequest() {
         RegisterRequest req = new RegisterRequest();
-        req.setFirstName("Олег");
-        req.setLastName("Иванов");
         req.setEmail(EMAIL);
         req.setPassword(PASSWORD);
         req.setConfirmPassword(PASSWORD);
@@ -204,6 +202,7 @@ class AuthServiceTest {
         verify(userRepository).save(userCaptor.capture());
         User saved = userCaptor.getValue();
         assertThat(saved.getEmail()).isEqualTo(EMAIL);
+        assertThat(saved.getUsername()).isEqualTo("user");
         assertThat(saved.getPasswordHash()).isEqualTo("encoded-hash");
         assertThat(saved.getRoles()).extracting(Role::getName).containsExactly("USER");
 
@@ -215,10 +214,10 @@ class AuthServiceTest {
         assertThat(savedToken.getExpiryDate()).isAfter(Instant.now().plusSeconds(59 * 60));
 
         verify(eventPublisher).publishEvent(new UserRegisteredInternalEvent(
-                saved.getId(), "Олег", "Иванов", EMAIL, null));
+                saved.getId(), EMAIL, null));
 
         verify(eventPublisher).publishEvent(new NotificationEmailEvent(
-                EMAIL, "Олег Иванов", savedToken.getToken(), "60"));
+                EMAIL, null, savedToken.getToken(), "60"));
     }
 
     // ---------- activateUser ----------
@@ -504,11 +503,12 @@ when(jwtProvider.generateAccessToken(eq(user), any())).thenReturn("access-token"
     // ---------- createPasswordResetToken ----------
 
     @Test
-    void createPasswordResetToken_whenUserNotFound_throwsUserNotFound() {
+    void createPasswordResetToken_whenUserNotFound_doesNothing() {
         when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> authService.createPasswordResetToken(EMAIL))
-                .isInstanceOf(UserNotFoundException.class);
+        authService.createPasswordResetToken(EMAIL);
+
+        verify(tokenRepository, never()).save(any(Token.class));
     }
 
     @Test
