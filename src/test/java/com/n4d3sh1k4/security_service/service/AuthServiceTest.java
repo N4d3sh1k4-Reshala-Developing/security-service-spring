@@ -42,6 +42,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -488,6 +489,7 @@ when(jwtProvider.generateAccessToken(eq(user), any())).thenReturn("access-token"
 
     @Test
     void refreshToken_whenValid_returnsNewTokensWithRememberMePreserved() {
+        user.setEnabled(true);
         when(refreshTokenService.findByToken("refresh-token")).thenReturn(Optional.of(validRefreshToken(user)));
         when(jwtProvider.generateAccessToken(eq(user), any())).thenReturn("new-access");
         when(cookieUtils.generateRefreshTokenCookie(eq(user), eq(true), eq(null), eq(null), any()))
@@ -498,6 +500,50 @@ when(jwtProvider.generateAccessToken(eq(user), any())).thenReturn("access-token"
         assertThat(result.getAccesToken()).isEqualTo("new-access");
         assertThat(result.getCookie()).contains("new-refresh");
         verify(cookieUtils).generateRefreshTokenCookie(eq(user), eq(true), eq(null), eq(null), any());
+    }
+
+    @Test
+    void refreshToken_whenUserDisabled_throwsDisabledAndKeepsToken() {
+        when(refreshTokenService.findByToken("refresh-token")).thenReturn(Optional.of(validRefreshToken(user)));
+
+        assertThatThrownBy(() -> authService.refreshToken("refresh-token", null, null))
+                .isInstanceOf(DisabledException.class);
+
+        verify(refreshTokenService, never()).deleteByToken(anyString());
+        verify(jwtProvider, never()).generateAccessToken(any(User.class), any());
+    }
+
+    @Test
+    void refreshToken_whenAccountLocked_throwsTooManyRequestsAndKeepsToken() {
+        user.setEnabled(true);
+        user.setAccountNonLocked(false);
+        user.setLockTime(Instant.now().plusSeconds(600));
+        when(refreshTokenService.findByToken("refresh-token")).thenReturn(Optional.of(validRefreshToken(user)));
+
+        assertThatThrownBy(() -> authService.refreshToken("refresh-token", null, null))
+                .isInstanceOf(TooManyRequestsException.class);
+
+        verify(refreshTokenService, never()).deleteByToken(anyString());
+        verify(jwtProvider, never()).generateAccessToken(any(User.class), any());
+    }
+
+    @Test
+    void refreshToken_whenLockExpired_unlocksAndProceeds() {
+        user.setEnabled(true);
+        user.setAccountNonLocked(false);
+        user.setLockTime(Instant.now().minusSeconds(60));
+        when(refreshTokenService.findByToken("refresh-token")).thenReturn(Optional.of(validRefreshToken(user)));
+        when(jwtProvider.generateAccessToken(eq(user), any())).thenReturn("new-access");
+        when(cookieUtils.generateRefreshTokenCookie(eq(user), eq(true), eq(null), eq(null), any()))
+                .thenReturn(ResponseCookie.from("refreshToken", "new-refresh").path("/").build());
+
+        AuthServiceResult result = authService.refreshToken("refresh-token", null, null);
+
+        assertThat(user.isAccountNonLocked()).isTrue();
+        assertThat(user.getFailedAttempts()).isZero();
+        assertThat(user.getLockTime()).isNull();
+        verify(userRepository).save(user);
+        assertThat(result.getAccesToken()).isEqualTo("new-access");
     }
 
     // ---------- createPasswordResetToken ----------

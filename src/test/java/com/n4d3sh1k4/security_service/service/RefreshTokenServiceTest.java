@@ -12,11 +12,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -67,6 +71,49 @@ class RefreshTokenServiceTest {
         refreshTokenService.deleteByToken("token-value");
 
         verify(refreshTokenRepository).deleteByToken("token-value");
+    }
+
+    @Test
+    void findAllByUserId_returnsOnlyActiveTokens() {
+        UUID userId = UUID.randomUUID();
+        RefreshToken active = storedToken();
+        when(refreshTokenRepository.findAllByUserIdAndExpiryDateAfter(eq(userId), any(Instant.class)))
+                .thenReturn(List.of(active));
+
+        assertThat(refreshTokenService.findAllByUserId(userId)).containsExactly(active);
+
+        verify(refreshTokenRepository).findAllByUserIdAndExpiryDateAfter(eq(userId), any(Instant.class));
+    }
+
+    @Test
+    void deleteSessionById_withCurrentToken_deletesExceptCurrentSession() {
+        UUID userId = UUID.randomUUID();
+        UUID sessionId = UUID.randomUUID();
+
+        refreshTokenService.deleteSessionById(userId, sessionId, "current-token");
+
+        verify(refreshTokenRepository).deleteSessionById(userId, sessionId, "current-token");
+        verify(refreshTokenRepository, never()).deleteSessionById(userId, sessionId);
+    }
+
+    @Test
+    void deleteSessionById_withoutCurrentToken_deletesRequestedSession() {
+        UUID userId = UUID.randomUUID();
+        UUID sessionId = UUID.randomUUID();
+
+        refreshTokenService.deleteSessionById(userId, sessionId, null);
+
+        verify(refreshTokenRepository).deleteSessionById(userId, sessionId);
+        verify(refreshTokenRepository, never()).deleteSessionById(eq(userId), eq(sessionId), any());
+    }
+
+    @Test
+    void deleteExpiredTokens_delegatesToRepository() {
+        when(refreshTokenRepository.deleteExpired(any(Instant.class))).thenReturn(2);
+
+        refreshTokenService.deleteExpiredTokens();
+
+        verify(refreshTokenRepository).deleteExpired(any(Instant.class));
     }
 
     @Test

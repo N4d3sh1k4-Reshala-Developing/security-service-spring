@@ -25,6 +25,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -236,6 +237,21 @@ public class AuthService {
 
         User user = oldToken.getUser();
         boolean rememberMe = oldToken.isRememberMe();
+
+        if (!user.isAccountNonLocked() && user.getLockTime() != null) {
+            if (user.getLockTime().isBefore(Instant.now())) {
+                user.setAccountNonLocked(true);
+                user.setFailedAttempts(0);
+                user.setLockTime(null);
+                userRepository.save(user);
+            } else {
+                throw new TooManyRequestsException("Account is locked. Try again later.");
+            }
+        }
+
+        if (!Boolean.TRUE.equals(user.getEnabled())) {
+            throw new DisabledException("User is disabled");
+        }
 
         log.info("Token refresh: userId={}, email={}, ip={}", user.getId(), user.getEmail(), ip);
         refreshTokenService.deleteByToken(refreshToken);

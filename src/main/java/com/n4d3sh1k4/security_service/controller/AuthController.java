@@ -1,5 +1,7 @@
 package com.n4d3sh1k4.security_service.controller;
 
+import com.n4d3sh1k4.common.dto.ApiError;
+import com.n4d3sh1k4.common.dto.ApiResponse;
 import com.n4d3sh1k4.security_service.exception.OAuthEmailAlreadyExistsException;
 import com.n4d3sh1k4.security_service.domain.repository.RoleRepository;
 import com.n4d3sh1k4.security_service.domain.repository.UserRepository;
@@ -175,13 +177,7 @@ public class AuthController {
                     .body(new JwtResponse(result.getAccesToken()));
         } catch (OAuthEmailAlreadyExistsException e) {
             log.warn("Yandex mobile collision: email {} already registered via another method", e.getEmail());
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
-                    "code", "EMAIL_EXISTS_LINK_REQUIRED",
-                    "message", e.getMessage(),
-                    "email", e.getEmail(),
-                    "provider", e.getProvider().name(),
-                    "providerUserId", e.getProviderUserId()
-            ));
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(emailExistsLinkRequired(e));
         }
     }
 
@@ -199,14 +195,19 @@ public class AuthController {
                     .body(new JwtResponse(result.getAccesToken()));
         } catch (OAuthEmailAlreadyExistsException e) {
             log.warn("VK mobile collision: email {} already registered via another method", e.getEmail());
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
-                    "code", "EMAIL_EXISTS_LINK_REQUIRED",
-                    "message", e.getMessage(),
-                    "email", e.getEmail(),
-                    "provider", e.getProvider().name(),
-                    "providerUserId", e.getProviderUserId()
-            ));
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(emailExistsLinkRequired(e));
         }
+    }
+
+    private ApiResponse<Object> emailExistsLinkRequired(OAuthEmailAlreadyExistsException e) {
+        return new ApiResponse<>(false,
+                Map.of(
+                        "email", e.getEmail(),
+                        "provider", e.getProvider().name(),
+                        "providerUserId", e.getProviderUserId()
+                ),
+                new ApiError("EMAIL_EXISTS_LINK_REQUIRED", e.getMessage()),
+                null);
     }
 
     @Operation(summary = "Привязка соцсети", description = "Привязывает соцсеть к аккаунту после ввода пароля.")

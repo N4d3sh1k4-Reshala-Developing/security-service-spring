@@ -8,6 +8,9 @@ import com.n4d3sh1k4.common.exception.UserAlreadyExistsException;
 import com.n4d3sh1k4.common.exception.UserNotFoundException;
 import com.n4d3sh1k4.security_service.domain.repository.RoleRepository;
 import com.n4d3sh1k4.security_service.domain.repository.UserRepository;
+import com.n4d3sh1k4.security_service.domain.model.security.RefreshToken;
+import com.n4d3sh1k4.security_service.domain.model.users.AuthProvider;
+import com.n4d3sh1k4.security_service.exception.OAuthEmailAlreadyExistsException;
 import com.n4d3sh1k4.security_service.dto.AuthServiceResult;
 import com.n4d3sh1k4.security_service.dto.request_dto.LinkSocialRequest;
 import com.n4d3sh1k4.security_service.dto.request_dto.LoginRequest;
@@ -46,6 +49,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -475,6 +479,38 @@ class AuthControllerTest {
     }
 
     @Test
+    void yandexMobile_emailCollision_returns409LinkRequired() throws Exception {
+        when(yandexAuthService.authenticateMobile(eq("y0_access_token"), any(), any()))
+                .thenThrow(new OAuthEmailAlreadyExistsException("user@example.com", AuthProvider.YANDEX, "123456789"));
+
+        mockMvc.perform(post("/auth/yandex-mobile")
+                        .contentType("application/json")
+                        .content("{\"accessToken\": \"y0_access_token\"}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("EMAIL_EXISTS_LINK_REQUIRED"))
+                .andExpect(jsonPath("$.data.email").value("user@example.com"))
+                .andExpect(jsonPath("$.data.provider").value("YANDEX"))
+                .andExpect(jsonPath("$.data.providerUserId").value("123456789"));
+    }
+
+    @Test
+    void vkMobile_emailCollision_returns409LinkRequired() throws Exception {
+        when(vkAuthService.authenticateMobile(eq("vk_code"), eq("verifier"), eq("device-1"), any(), any()))
+                .thenThrow(new OAuthEmailAlreadyExistsException("user@example.com", AuthProvider.VK, "777"));
+
+        mockMvc.perform(post("/auth/vk-mobile")
+                        .contentType("application/json")
+                        .content("{\"code\": \"vk_code\", \"codeVerifier\": \"verifier\", \"deviceId\": \"device-1\"}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("EMAIL_EXISTS_LINK_REQUIRED"))
+                .andExpect(jsonPath("$.data.email").value("user@example.com"))
+                .andExpect(jsonPath("$.data.provider").value("VK"))
+                .andExpect(jsonPath("$.data.providerUserId").value("777"));
+    }
+
+    @Test
     void linkSocial_success_returns200() throws Exception {
         when(authService.linkSocialAccount(any(LinkSocialRequest.class), any(), any()))
                 .thenReturn(new AuthServiceResult(ACCESS_TOKEN, REFRESH_COOKIE));
@@ -506,5 +542,109 @@ class AuthControllerTest {
                                 """))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
+    }
+
+    // ---------- sessions ----------
+
+    private static final String SESSION_ID = "650e8400-e29b-41d4-a716-446655440000";
+    private static final String OTHER_SESSION_ID = "750e8400-e29b-41d4-a716-446655440000";
+
+    private RefreshToken refreshToken(String id, String tokenValue, String ip) {
+        RefreshToken rt = new RefreshToken();
+        rt.setId(java.util.UUID.fromString(id));
+        rt.setToken(tokenValue);
+        rt.setIp(ip);
+        rt.setUserAgent("Mozilla/5.0");
+        rt.setExpiryDate(java.time.Instant.now().plus(3600, java.time.temporal.ChronoUnit.SECONDS));
+        rt.setRememberMe(true);
+        rt.setCreatedAt(java.time.LocalDateTime.of(2026, 9, 26, 12, 0));
+        return rt;
+    }
+
+    @Test
+    void getSessions_marksCurrentSessionByCookie() throws Exception {
+        when(refreshTokenService.findAllByUserId(java.util.UUID.fromString(USER_ID))).thenReturn(java.util.List.of(
+                refreshToken(SESSION_ID, "current-token", "127.0.0.1"),
+                refreshToken(OTHER_SESSION_ID, "other-token", "10.0.0.5")));
+
+        mockMvc.perform(get("/auth/sessions")
+                        .with(user(USER_ID).roles("USER"))
+                        .cookie(new Cookie("refreshToken", "current-token")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.length()").value(2))
+                .andExpect(jsonPath("$.data[0].id").value(SESSION_ID))
+                .andExpect(jsonPath("$.data[0].ip").value("127.0.0.1"))
+                .andExpect(jsonPath("$.data[0].userAgent").value("Mozilla/5.0"))
+                .andExpect(jsonPath("$.data[0].rememberMe").value(true))
+                .andExpect(jsonPath("$.data[0].current").value(true))
+                .andExpect(jsonPath("$.data[1].current").value(false));
+    }
+
+    @Test
+    void getSessions_withoutCookie_allSessionsNonCurrent() throws Exception {
+        when(refreshTokenService.findAllByUserId(java.util.UUID.fromString(USER_ID)))
+                .thenReturn(java.util.List.of(refreshToken(SESSION_ID, "t1", "127.0.0.1")));
+
+        mockMvc.perform(get("/auth/sessions").with(user(USER_ID)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].current").value(false));
+    }
+
+    @Test
+    void deleteSession_passesIdsAndCookieToService() throws Exception {
+        mockMvc.perform(delete("/auth/sessions/" + SESSION_ID)
+                        .with(user(USER_ID))
+                        .cookie(new Cookie("refreshToken", "current-token")))
+                .andExpect(status().isNoContent());
+
+        verify(refreshTokenService).deleteSessionById(
+                java.util.UUID.fromString(USER_ID),
+                java.util.UUID.fromString(SESSION_ID),
+                "current-token");
+    }
+
+    @Test
+    void deleteSession_unknownSession_returns204AndDelegates() throws Exception {
+        mockMvc.perform(delete("/auth/sessions/" + OTHER_SESSION_ID)
+                        .with(user(USER_ID))
+                        .cookie(new Cookie("refreshToken", "current-token")))
+                .andExpect(status().isNoContent());
+
+        verify(refreshTokenService).deleteSessionById(
+                java.util.UUID.fromString(USER_ID),
+                java.util.UUID.fromString(OTHER_SESSION_ID),
+                "current-token");
+    }
+
+    @Test
+    void deleteSession_withoutCookie_passesNullCookieToService() throws Exception {
+        mockMvc.perform(delete("/auth/sessions/" + SESSION_ID)
+                        .with(user(USER_ID)))
+                .andExpect(status().isNoContent());
+
+        verify(refreshTokenService).deleteSessionById(
+                java.util.UUID.fromString(USER_ID),
+                java.util.UUID.fromString(SESSION_ID),
+                null);
+    }
+
+    @Test
+    void deleteAllSessions_withCookie_revokesExceptCurrent() throws Exception {
+        mockMvc.perform(delete("/auth/sessions")
+                        .with(user(USER_ID))
+                        .cookie(new Cookie("refreshToken", "current-token")))
+                .andExpect(status().isNoContent());
+
+        verify(refreshTokenService).deleteByUserIdExceptToken(
+                java.util.UUID.fromString(USER_ID), "current-token");
+    }
+
+    @Test
+    void deleteAllSessions_withoutCookie_doesNotDelete() throws Exception {
+        mockMvc.perform(delete("/auth/sessions").with(user(USER_ID)))
+                .andExpect(status().isNoContent());
+
+        verify(refreshTokenService, never()).deleteByUserIdExceptToken(any(), any());
     }
 }

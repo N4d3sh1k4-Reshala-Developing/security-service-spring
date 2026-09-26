@@ -9,15 +9,16 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long> {
+public interface RefreshTokenRepository extends JpaRepository<RefreshToken, UUID> {
     Optional<RefreshToken> findByToken(String token);
 
-    List<RefreshToken> findAllByUserId(UUID userId);
+    List<RefreshToken> findAllByUserIdAndExpiryDateAfter(UUID userId, Instant expiryDate);
 
     @Modifying
     @Transactional
@@ -37,4 +38,14 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long
     @Transactional
     @Query("DELETE FROM RefreshToken r WHERE r.user.id = :userId AND r.id = :sessionId AND r.token <> :currentToken")
     void deleteSessionById(@Param("userId") UUID userId, @Param("sessionId") UUID sessionId, @Param("currentToken") String currentToken);
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM RefreshToken r WHERE r.user.id = :userId AND r.id = :sessionId")
+    void deleteSessionById(@Param("userId") UUID userId, @Param("sessionId") UUID sessionId);
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM RefreshToken r WHERE r.expiryDate < :now")
+    int deleteExpired(@Param("now") Instant now);
 }
