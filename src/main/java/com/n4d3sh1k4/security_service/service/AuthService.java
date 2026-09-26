@@ -94,11 +94,11 @@ public class AuthService {
                 .build();
         tokenRepository.save(verificationToken);
 
-//        eventPublisher.publishEvent(new UserRegisteredInternalEvent(
-//                user.getId(),
-//                user.getEmail(),
-//                null
-//        ));
+        eventPublisher.publishEvent(new UserRegisteredInternalEvent(
+                user.getId(),
+                user.getEmail(),
+                null
+        ));
 
         log.info("Username: {}",  user.getUsername());
         eventPublisher.publishEvent(new NotificationEmailEvent(

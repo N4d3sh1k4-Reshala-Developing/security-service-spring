@@ -217,7 +217,7 @@ class AuthServiceTest {
                 saved.getId(), EMAIL, null));
 
         verify(eventPublisher).publishEvent(new NotificationEmailEvent(
-                EMAIL, null, savedToken.getToken(), "60"));
+                EMAIL, "user", savedToken.getToken(), "60"));
     }
 
     // ---------- activateUser ----------
