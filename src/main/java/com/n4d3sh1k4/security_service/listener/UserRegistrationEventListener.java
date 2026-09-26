@@ -20,7 +20,7 @@ public class UserRegistrationEventListener {
     public void handleUserRegistration(UserRegisteredInternalEvent event) {
         log.info("Transaction committed. Storing user.created event for user: {}", event.id());
 
-        UserCreatedEvent rabbitEvent = new UserCreatedEvent(event.id(), event.firstName(), event.lastName(), event.email(), event.phone());
+        UserCreatedEvent rabbitEvent = new UserCreatedEvent(event.id(), event.email(), event.phone());
 
         outboxPublisher.publish("user.created", rabbitEvent);
     }

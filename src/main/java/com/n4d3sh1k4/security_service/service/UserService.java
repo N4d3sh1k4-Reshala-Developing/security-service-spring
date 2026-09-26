@@ -41,7 +41,11 @@ public class UserService {
                     }
 
                     User newUser = new User();
-                    newUser.setEmail(email.toLowerCase());
+                    String localEmail = email.toLowerCase();
+                    String namePart = ((firstName == null ? "" : firstName.trim())
+                            + " " + (lastName == null ? "" : lastName.trim())).trim();
+                    newUser.setEmail(localEmail);
+                    newUser.setUsername(namePart.isEmpty() ? localEmail.split("@", 2)[0] : namePart);
                     newUser.setPasswordHash(null);
                     newUser.setEnabled(true);
                     newUser.setRoles(roleRepository.findByName("USER"));
@@ -53,13 +57,8 @@ public class UserService {
                     identity.setProviderUserId(providerUserId);
                     userIdentityRepository.save(identity);
 
-                    String finalFirstName = (firstName != null && !firstName.isBlank()) ? firstName.trim() : email.split("@")[0];
-                    String finalLastName = (lastName != null && !lastName.isBlank()) ? lastName.trim() : "";
-
                     eventPublisher.publishEvent(new UserRegisteredInternalEvent(
                             newUser.getId(),
-                            finalFirstName,
-                            finalLastName,
                             newUser.getEmail(),
                             phone
                     ));

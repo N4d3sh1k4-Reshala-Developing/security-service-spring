@@ -4,7 +4,5 @@ import java.util.UUID;
 
 public record UserRegisteredInternalEvent(
         UUID id,
-        String firstName,
-        String lastName,
         String email,
         String phone) {}

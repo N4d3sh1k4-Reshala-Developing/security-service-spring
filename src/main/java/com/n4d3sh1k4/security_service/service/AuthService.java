@@ -80,6 +80,7 @@ public class AuthService {
 
         User user = new User();
         user.setEmail(req.getEmail().toLowerCase());
+        user.setUsername(user.getEmail().split("@", 2)[0]);
         user.setPasswordHash(encodedPassword);
         user.setRoles(roleRepository.findByName("USER"));
         userRepository.save(user);
@@ -93,17 +94,16 @@ public class AuthService {
                 .build();
         tokenRepository.save(verificationToken);
 
-        eventPublisher.publishEvent(new UserRegisteredInternalEvent(
-                user.getId(),
-                req.getFirstName(),
-                req.getLastName(),
-                user.getEmail(),
-                null
-        ));
+//        eventPublisher.publishEvent(new UserRegisteredInternalEvent(
+//                user.getId(),
+//                user.getEmail(),
+//                null
+//        ));
 
+        log.info("Username: {}",  user.getUsername());
         eventPublisher.publishEvent(new NotificationEmailEvent(
                 user.getEmail(),
-                req.getFirstName() + " " +  req.getLastName(),
+                user.getUsername(),
                 tokenValue,
                 accountActivationTokenTtl
         ));
@@ -160,9 +160,11 @@ public class AuthService {
                 .build();
         tokenRepository.save(verificationToken);
 
+
+        log.info("Username: {}",  user.getUsername());
         eventPublisher.publishEvent(new NotificationEmailEvent(
                 user.getEmail(),
-                null,
+                user.getUsername(),
                 tokenValue,
                 accountActivationTokenTtl
         ));

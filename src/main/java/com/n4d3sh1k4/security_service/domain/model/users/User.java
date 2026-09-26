@@ -27,6 +27,9 @@ public class User {
     @Column(name = "email")
     private String email;
 
+    @Column(name = "username")
+    private String username;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "auth_provider")
     private AuthProvider provider = AuthProvider.LOCAL;
