@@ -556,6 +556,32 @@ class AuthControllerTest {
     }
 
     @Test
+    void vkMobile_oversizedDeviceId_returns400AndLogsField() throws Exception {
+        ch.qos.logback.classic.Logger logger = (ch.qos.logback.classic.Logger)
+                org.slf4j.LoggerFactory.getLogger(com.n4d3sh1k4.security_service.advice.FrameworkExceptionHandler.class);
+        ch.qos.logback.core.read.ListAppender<ch.qos.logback.classic.spi.ILoggingEvent> appender =
+                new ch.qos.logback.core.read.ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+        try {
+            String deviceId = "d".repeat(300);
+            mockMvc.perform(post("/auth/vk-mobile")
+                            .contentType("application/json")
+                            .content("{\"code\": \"c\", \"codeVerifier\": \"v\", \"deviceId\": \"" + deviceId + "\"}"))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
+        } finally {
+            logger.detachAppender(appender);
+        }
+
+        org.junit.jupiter.api.Assertions.assertFalse(appender.list.isEmpty());
+        String msg = appender.list.get(0).getFormattedMessage();
+        org.junit.jupiter.api.Assertions.assertTrue(
+                msg.contains("field=deviceId") && msg.contains("size must be between"),
+                "unexpected log line: " + msg);
+    }
+
+    @Test
     void linkSocial_success_returns200() throws Exception {
         when(authService.linkSocialAccount(any(LinkSocialRequest.class), any(), any()))
                 .thenReturn(new AuthServiceResult(ACCESS_TOKEN, REFRESH_COOKIE));
