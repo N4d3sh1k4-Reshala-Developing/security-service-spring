@@ -13,16 +13,16 @@ import java.util.List;
 @Configuration
 public class OAuth2ClientConfig {
 
-    @Value("${YANDEX_CLIENT_ID:5e58d1a8f2f141df8928574f01b6e152}")
+    @Value("${yandex.client.id}")
     private String yandexClientId;
 
-    @Value("${YANDEX_CLIENT_SECRET:637fb18431784d97be2afc104e2786b9}")
+    @Value("${yandex.client.secret}")
     private String yandexClientSecret;
 
-    @Value("${VK_CLIENT_ID:54657062}")
+    @Value("${vk.client.id}")
     private String vkClientId;
 
-    @Value("${VK_CLIENT_SECRET:d07afc96d07afc96d07afc96e7d338fcb0dd07ad07afc96ba3ba982bc64d9ab003d4939}")
+    @Value("${vk.client.secret}")
     private String vkClientSecret;
 
     @Value("${app.oauth2.redirect-uri:http://localhost:8180/api/v0/login/oauth2/code/{registrationId}}")

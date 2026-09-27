@@ -83,6 +83,11 @@ app:
     email: ${DEFAULT_ADMIN_EMAIL}
     password: ${DEFAULT_ADMIN_PASSWORD}
 
+yandex:
+  client:
+    id: ${YANDEX_CLIENT_ID}
+    secret: ${YANDEX_CLIENT_SECRET}
+
 vk:
   client:
     id: ${VK_CLIENT_ID}

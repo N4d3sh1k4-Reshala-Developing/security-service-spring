@@ -210,7 +210,9 @@ public class AuthController {
                 null);
     }
 
-    @Operation(summary = "Привязка соцсети", description = "Привязывает соцсеть к аккаунту после ввода пароля.")
+    @Operation(summary = "Привязка соцсети",
+               description = "Привязывает соцсеть к аккаунту после ввода пароля. Провайдер подтверждает владение аккаунтом: для VK нужен свежий code (+codeVerifier/deviceId/state), для Яндекса — свежий accessToken. providerUserId клиент не передаёт, сервер берёт его из ответа провайдера. " +
+                       "409 SOCIAL_ACCOUNT_ALREADY_LINKED, если identity уже привязана к другому пользователю.")
     @PostMapping("/link-social")
     public ResponseEntity<?> linkSocial(@Valid @RequestBody LinkSocialRequest request, HttpServletRequest httpRequest) {
         String ip = ClientIpUtils.resolve(httpRequest);

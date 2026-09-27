@@ -4,6 +4,7 @@ import com.n4d3sh1k4.common.exception.BaseException;
 import com.n4d3sh1k4.security_service.domain.model.users.AuthProvider;
 import com.n4d3sh1k4.security_service.domain.model.users.User;
 import com.n4d3sh1k4.security_service.dto.AuthServiceResult;
+import com.n4d3sh1k4.security_service.dto.SocialProfile;
 import com.n4d3sh1k4.security_service.jwt.JwtProvider;
 import com.n4d3sh1k4.security_service.utils.CookieUtils;
 import lombok.RequiredArgsConstructor;
@@ -57,23 +58,41 @@ public class VkAuthService {
     private final CookieUtils cookieUtils;
     private final UserGeoService userGeoService;
 
-    public AuthServiceResult authenticateMobile(String code, String codeVerifier, String deviceId, String state, String userAgent, String ip) {
+    /**
+     * Проверяет свежий код авторизации VK ID и возвращает профиль провайдера.
+     * Это единственный источник providerUserId: клиентский ID не принимается.
+     */
+    public SocialProfile resolveProfile(String code, String codeVerifier, String deviceId, String state) {
         String accessToken = exchangeCodeForAccessToken(code, codeVerifier, deviceId, state);
 
         Map<String, Object> vkUserAttributes = fetchVkUserInfo(accessToken, deviceId);
 
-        String providerUserId = String.valueOf(vkUserAttributes.get("user_id"));
-        String email = (String) vkUserAttributes.get("email");
+        Object rawUserId = vkUserAttributes.get("user_id");
+        if (rawUserId == null || String.valueOf(rawUserId).isBlank()) {
+            log.error("VK ID user_info did not return user_id");
+            throw new BaseException("VK ID did not return a user id", "VK_USER_INFO_FAILED", HttpStatus.BAD_REQUEST);
+        }
+
+        return new SocialProfile(
+                String.valueOf(rawUserId),
+                (String) vkUserAttributes.get("email"),
+                (String) vkUserAttributes.get("first_name"),
+                (String) vkUserAttributes.get("last_name"),
+                normalizePhone((String) vkUserAttributes.get("phone"))
+        );
+    }
+
+    public AuthServiceResult authenticateMobile(String code, String codeVerifier, String deviceId, String state, String userAgent, String ip) {
+        SocialProfile profile = resolveProfile(code, codeVerifier, deviceId, state);
+
+        String providerUserId = profile.providerUserId();
+        String email = profile.email();
         if (email == null || email.isBlank()) {
             log.error("VK mobile login failed: VK ID did not return an email for user {}", providerUserId);
             throw new BaseException("VK ID did not return an email", "EMAIL_NOT_FOUND", HttpStatus.BAD_REQUEST);
         }
 
-        String firstName = (String) vkUserAttributes.get("first_name");
-        String lastName = (String) vkUserAttributes.get("last_name");
-        String phone = normalizePhone((String) vkUserAttributes.get("phone"));
-
-        User user = userService.processOAuthPostLogin(AuthProvider.VK, providerUserId, email, firstName, lastName, phone);
+        User user = userService.processOAuthPostLogin(AuthProvider.VK, providerUserId, email, profile.firstName(), profile.lastName(), profile.phone());
 
         String city = userGeoService.resolveCity(ip);
         String accessTokenOut = jwtProvider.generateAccessToken(user, city);

@@ -20,6 +20,7 @@ import com.n4d3sh1k4.security_service.domain.repository.TokenRepository;
 import com.n4d3sh1k4.security_service.domain.repository.UserIdentityRepository;
 import com.n4d3sh1k4.security_service.domain.repository.UserRepository;
 import com.n4d3sh1k4.security_service.dto.AuthServiceResult;
+import com.n4d3sh1k4.security_service.dto.SocialProfile;
 import com.n4d3sh1k4.security_service.dto.event.LoginEvent;
 import com.n4d3sh1k4.security_service.dto.event.NotificationEmailEvent;
 import com.n4d3sh1k4.security_service.dto.event.PasswordResetEvent;
@@ -107,6 +108,12 @@ class AuthServiceTest {
 
     @Mock
     private OutboxPublisher outboxPublisher;
+
+    @Mock
+    private VkAuthService vkAuthService;
+
+    @Mock
+    private YandexAuthService yandexAuthService;
 
     @InjectMocks
     private AuthService authService;
@@ -637,17 +644,34 @@ when(jwtProvider.generateAccessToken(eq(user), any())).thenReturn("access-token"
 
     // ---------- linkSocialAccount ----------
 
+    private LinkSocialRequest yandexLinkRequest() {
+        LinkSocialRequest req = new LinkSocialRequest();
+        req.setEmail(EMAIL);
+        req.setPassword(PASSWORD);
+        req.setProvider(AuthProvider.YANDEX);
+        req.setAccessToken("yandex-fresh-token");
+        return req;
+    }
+
+    private LinkSocialRequest vkLinkRequest() {
+        LinkSocialRequest req = new LinkSocialRequest();
+        req.setEmail(EMAIL);
+        req.setPassword(PASSWORD);
+        req.setProvider(AuthProvider.VK);
+        req.setCode("vk-fresh-code");
+        req.setCodeVerifier("verifier");
+        req.setDeviceId("device-1");
+        req.setState("state-1");
+        return req;
+    }
+
     @Test
     void linkSocialAccount_whenUserNotFound_throwsUserNotFound() {
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                 .thenReturn(mock(Authentication.class));
         when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.empty());
 
-        LinkSocialRequest req = new LinkSocialRequest();
-        req.setEmail(EMAIL);
-        req.setPassword(PASSWORD);
-        req.setProvider(AuthProvider.YANDEX);
-        req.setProviderUserId("ya-123");
+        LinkSocialRequest req = yandexLinkRequest();
 
         assertThatThrownBy(() -> authService.linkSocialAccount(req, null, null))
                 .isInstanceOf(UserNotFoundException.class);
@@ -658,19 +682,15 @@ when(jwtProvider.generateAccessToken(eq(user), any())).thenReturn("access-token"
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                 .thenReturn(mock(Authentication.class));
         when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(user));
+        when(yandexAuthService.resolveProfile("yandex-fresh-token"))
+                .thenReturn(new SocialProfile("ya-123", EMAIL, "First", "Last", null));
         when(userIdentityRepository.findByProviderAndProviderUserId(AuthProvider.YANDEX, "ya-123"))
                 .thenReturn(Optional.empty());
         when(jwtProvider.generateAccessToken(eq(user), any())).thenReturn("access-token");
         when(cookieUtils.generateRefreshTokenCookie(eq(user), eq(true), eq(null), eq(null), any()))
                 .thenReturn(ResponseCookie.from("refreshToken", "rt").path("/").build());
 
-        LinkSocialRequest req = new LinkSocialRequest();
-        req.setEmail(EMAIL);
-        req.setPassword(PASSWORD);
-        req.setProvider(AuthProvider.YANDEX);
-        req.setProviderUserId("ya-123");
-
-        AuthServiceResult result = authService.linkSocialAccount(req, null, null);
+        AuthServiceResult result = authService.linkSocialAccount(yandexLinkRequest(), null, null);
 
         ArgumentCaptor<UserIdentity> identityCaptor = ArgumentCaptor.forClass(UserIdentity.class);
         verify(userIdentityRepository).save(identityCaptor.capture());
@@ -682,10 +702,65 @@ when(jwtProvider.generateAccessToken(eq(user), any())).thenReturn("access-token"
     }
 
     @Test
+    void linkSocialAccount_forVk_takesProviderUserIdFromProviderResponse() {
+        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                .thenReturn(mock(Authentication.class));
+        when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(user));
+        when(vkAuthService.resolveProfile("vk-fresh-code", "verifier", "device-1", "state-1"))
+                .thenReturn(new SocialProfile("vk-777", null, "First", "Last", "79161234567"));
+        when(userIdentityRepository.findByProviderAndProviderUserId(AuthProvider.VK, "vk-777"))
+                .thenReturn(Optional.empty());
+        when(jwtProvider.generateAccessToken(eq(user), any())).thenReturn("access-token");
+        when(cookieUtils.generateRefreshTokenCookie(eq(user), eq(true), eq(null), eq(null), any()))
+                .thenReturn(ResponseCookie.from("refreshToken", "rt").path("/").build());
+
+        authService.linkSocialAccount(vkLinkRequest(), null, null);
+
+        ArgumentCaptor<UserIdentity> identityCaptor = ArgumentCaptor.forClass(UserIdentity.class);
+        verify(userIdentityRepository).save(identityCaptor.capture());
+        assertThat(identityCaptor.getValue().getProvider()).isEqualTo(AuthProvider.VK);
+        assertThat(identityCaptor.getValue().getProviderUserId()).isEqualTo("vk-777");
+    }
+
+    @Test
+    void linkSocialAccount_whenVkCodeMissing_throwsBadRequest() {
+        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                .thenReturn(mock(Authentication.class));
+        when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(user));
+
+        LinkSocialRequest req = vkLinkRequest();
+        req.setCode(null);
+
+        assertThatThrownBy(() -> authService.linkSocialAccount(req, null, null))
+                .isInstanceOf(BaseException.class)
+                .hasMessageContaining("VK authorization code is required");
+
+        verify(userIdentityRepository, never()).save(any(UserIdentity.class));
+    }
+
+    @Test
+    void linkSocialAccount_whenYandexTokenMissing_throwsBadRequest() {
+        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                .thenReturn(mock(Authentication.class));
+        when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(user));
+
+        LinkSocialRequest req = yandexLinkRequest();
+        req.setAccessToken("  ");
+
+        assertThatThrownBy(() -> authService.linkSocialAccount(req, null, null))
+                .isInstanceOf(BaseException.class)
+                .hasMessageContaining("Yandex access token is required");
+
+        verify(userIdentityRepository, never()).save(any(UserIdentity.class));
+    }
+
+    @Test
     void linkSocialAccount_whenIdentityExists_doesNotSaveAgain() {
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                 .thenReturn(mock(Authentication.class));
         when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(user));
+        when(yandexAuthService.resolveProfile(anyString()))
+                .thenReturn(new SocialProfile("ya-123", EMAIL, null, null, null));
         UserIdentity identity = new UserIdentity();
         identity.setUser(user);
         identity.setProvider(AuthProvider.YANDEX);
@@ -696,15 +771,36 @@ when(jwtProvider.generateAccessToken(eq(user), any())).thenReturn("access-token"
         when(cookieUtils.generateRefreshTokenCookie(eq(user), eq(true), eq(null), eq(null), any()))
                 .thenReturn(ResponseCookie.from("refreshToken", "rt").path("/").build());
 
-        LinkSocialRequest req = new LinkSocialRequest();
-        req.setEmail(EMAIL);
-        req.setPassword(PASSWORD);
-        req.setProvider(AuthProvider.YANDEX);
-        req.setProviderUserId("ya-123");
-
-        authService.linkSocialAccount(req, null, null);
+        authService.linkSocialAccount(yandexLinkRequest(), null, null);
 
         verify(userIdentityRepository, never()).save(any(UserIdentity.class));
+    }
+
+    @Test
+    void linkSocialAccount_whenIdentityLinkedToAnotherUser_throwsConflict() {
+        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                .thenReturn(mock(Authentication.class));
+        when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(user));
+        when(yandexAuthService.resolveProfile(anyString()))
+                .thenReturn(new SocialProfile("ya-123", EMAIL, null, null, null));
+
+        User otherUser = new User();
+        otherUser.setId(UUID.randomUUID());
+        otherUser.setEmail("other@example.com");
+
+        UserIdentity identity = new UserIdentity();
+        identity.setUser(otherUser);
+        identity.setProvider(AuthProvider.YANDEX);
+        identity.setProviderUserId("ya-123");
+        when(userIdentityRepository.findByProviderAndProviderUserId(AuthProvider.YANDEX, "ya-123"))
+                .thenReturn(Optional.of(identity));
+
+        assertThatThrownBy(() -> authService.linkSocialAccount(yandexLinkRequest(), null, null))
+                .isInstanceOf(BaseException.class)
+                .hasMessageContaining("already linked to another user");
+
+        verify(userIdentityRepository, never()).save(any(UserIdentity.class));
+        verify(jwtProvider, never()).generateAccessToken(any(User.class), any());
     }
 
 

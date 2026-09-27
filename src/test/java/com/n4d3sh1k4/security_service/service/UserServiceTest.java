@@ -130,6 +130,71 @@ class UserServiceTest {
     }
 
     @Test
+    void processOAuthPostLogin_whenProviderEmailChangedForOauthOnlyUser_syncsEmail() {
+        User existing = new User();
+        existing.setId(UUID.randomUUID());
+        existing.setEmail("old@example.com");
+        existing.setPasswordHash(null);
+        UserIdentity identity = new UserIdentity();
+        identity.setUser(existing);
+        identity.setProvider(AuthProvider.VK);
+        identity.setProviderUserId("vk-1");
+        when(userIdentityRepository.findByProviderAndProviderUserId(AuthProvider.VK, "vk-1"))
+                .thenReturn(Optional.of(identity));
+        when(userRepository.findByEmail("new@example.com")).thenReturn(Optional.empty());
+
+        User result = userService.processOAuthPostLogin(AuthProvider.VK, "vk-1",
+                "New@Example.com", "Иван", "Петров", null);
+
+        assertThat(result.getEmail()).isEqualTo("new@example.com");
+        verify(userRepository).save(existing);
+    }
+
+    @Test
+    void processOAuthPostLogin_whenProviderEmailChangedAndAccountHasPassword_keepsStoredEmail() {
+        User existing = new User();
+        existing.setId(UUID.randomUUID());
+        existing.setEmail("old@example.com");
+        existing.setPasswordHash("encoded-hash");
+        UserIdentity identity = new UserIdentity();
+        identity.setUser(existing);
+        identity.setProvider(AuthProvider.VK);
+        identity.setProviderUserId("vk-2");
+        when(userIdentityRepository.findByProviderAndProviderUserId(AuthProvider.VK, "vk-2"))
+                .thenReturn(Optional.of(identity));
+
+        User result = userService.processOAuthPostLogin(AuthProvider.VK, "vk-2",
+                "new@example.com", "Иван", "Петров", null);
+
+        assertThat(result.getEmail()).isEqualTo("old@example.com");
+        verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    void processOAuthPostLogin_whenProviderEmailTakenByAnotherUser_keepsStoredEmail() {
+        User existing = new User();
+        existing.setId(UUID.randomUUID());
+        existing.setEmail("old@example.com");
+        existing.setPasswordHash(null);
+        User other = new User();
+        other.setId(UUID.randomUUID());
+        other.setEmail("taken@example.com");
+        UserIdentity identity = new UserIdentity();
+        identity.setUser(existing);
+        identity.setProvider(AuthProvider.VK);
+        identity.setProviderUserId("vk-3");
+        when(userIdentityRepository.findByProviderAndProviderUserId(AuthProvider.VK, "vk-3"))
+                .thenReturn(Optional.of(identity));
+        when(userRepository.findByEmail("taken@example.com")).thenReturn(Optional.of(other));
+
+        User result = userService.processOAuthPostLogin(AuthProvider.VK, "vk-3",
+                "taken@example.com", "Иван", "Петров", null);
+
+        assertThat(result.getEmail()).isEqualTo("old@example.com");
+        verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
     void processOAuthPostLogin_whenNamesBlank() {
         when(userIdentityRepository.findByProviderAndProviderUserId(AuthProvider.YANDEX, "ya-2"))
                 .thenReturn(Optional.empty());

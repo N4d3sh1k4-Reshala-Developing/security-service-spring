@@ -606,7 +606,29 @@ class AuthControllerTest {
                                   "email": "user@gmail.com",
                                   "password": "Password#4848",
                                   "provider": "YANDEX",
-                                  "providerUserId": "123456789"
+                                  "accessToken": "y0_xxxxxxxxxxxxx"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.accessToken").value(ACCESS_TOKEN));
+    }
+
+    @Test
+    void linkSocial_forVk_acceptsFreshCode() throws Exception {
+        when(authService.linkSocialAccount(any(LinkSocialRequest.class), any(), any()))
+                .thenReturn(new AuthServiceResult(ACCESS_TOKEN, REFRESH_COOKIE));
+
+        mockMvc.perform(post("/auth/link-social")
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "email": "user@gmail.com",
+                                  "password": "Password#4848",
+                                  "provider": "VK",
+                                  "code": "1234567890",
+                                  "codeVerifier": "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk",
+                                  "deviceId": "abc123-def456",
+                                  "state": "xyz789"
                                 }
                                 """))
                 .andExpect(status().isOk())
@@ -621,7 +643,7 @@ class AuthControllerTest {
                                 {
                                   "email": "user@gmail.com",
                                   "password": "Password#4848",
-                                  "providerUserId": "123456789"
+                                  "accessToken": "y0_xxxxxxxxxxxxx"
                                 }
                                 """))
                 .andExpect(status().isBadRequest())

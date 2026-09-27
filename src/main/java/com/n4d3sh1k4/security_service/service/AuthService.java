@@ -8,6 +8,7 @@ import com.n4d3sh1k4.security_service.domain.model.users.User;
 import com.n4d3sh1k4.security_service.domain.model.users.UserIdentity;
 import com.n4d3sh1k4.security_service.domain.repository.*;
 import com.n4d3sh1k4.security_service.dto.AuthServiceResult;
+import com.n4d3sh1k4.security_service.dto.SocialProfile;
 import com.n4d3sh1k4.security_service.dto.event.LoginEvent;
 import com.n4d3sh1k4.security_service.dto.event.NotificationEmailEvent;
 import com.n4d3sh1k4.security_service.dto.event.PasswordResetEvent;
@@ -35,6 +36,7 @@ import org.springframework.stereotype.Service;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.Objects;
 import java.util.UUID;
 
 @Slf4j
@@ -66,6 +68,8 @@ public class AuthService {
     private final CookieUtils cookieUtils;
     private final AuthenticationManager authenticationManager;
     private final UserGeoService userGeoService;
+    private final VkAuthService vkAuthService;
+    private final YandexAuthService yandexAuthService;
 
     private final ApplicationEventPublisher eventPublisher;
     private final OutboxPublisher outboxPublisher;
@@ -341,13 +345,35 @@ public class AuthService {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
 
-        boolean exists = userIdentityRepository.findByProviderAndProviderUserId(request.getProvider(), request.getProviderUserId()).isPresent();
+        SocialProfile profile = resolveProviderProfile(request);
 
-        if (!exists) {
+        if (profile.email() != null && !profile.email().isBlank()
+                && !profile.email().equalsIgnoreCase(user.getEmail())) {
+            log.info("Link: provider email {} differs from account email {} (userId={}). Account email is kept.",
+                    profile.email(), user.getEmail(), user.getId());
+        }
+
+        String providerUserId = profile.providerUserId();
+
+        UserIdentity existingIdentity = userIdentityRepository
+                .findByProviderAndProviderUserId(request.getProvider(), providerUserId)
+                .orElse(null);
+
+        if (existingIdentity != null) {
+            if (!Objects.equals(existingIdentity.getUser().getId(), user.getId())) {
+                log.warn("Link rejected: {} identity {} is already linked to another account (userId={}, requestedUserId={})",
+                        request.getProvider(), providerUserId,
+                        existingIdentity.getUser().getId(), user.getId());
+                throw new BaseException("This provider account is already linked to another user",
+                        "SOCIAL_ACCOUNT_ALREADY_LINKED", HttpStatus.CONFLICT);
+            }
+            log.info("Link is already present: {} identity {} for userId={}",
+                    request.getProvider(), providerUserId, user.getId());
+        } else {
             UserIdentity identity = new UserIdentity();
             identity.setUser(user);
             identity.setProvider(request.getProvider());
-            identity.setProviderUserId(request.getProviderUserId());
+            identity.setProviderUserId(providerUserId);
             userIdentityRepository.save(identity);
             log.info("Successfully linked {} identity to user {}", request.getProvider(), user.getEmail());
         }
@@ -358,5 +384,34 @@ public class AuthService {
                 jwtProvider.generateAccessToken(user, city),
                 cookieUtils.generateRefreshTokenCookie(user, true, userAgent, ip, city).toString()
         );
+    }
+
+    /**
+     * Провайдер подтверждает владение аккаунтом сам: клиент присылает свежий код (VK)
+     * или access token (Яндекс), а providerUserId берётся только из ответа провайдера.
+     */
+    private SocialProfile resolveProviderProfile(LinkSocialRequest request) {
+        return switch (request.getProvider()) {
+            case VK -> {
+                if (isBlank(request.getCode())) {
+                    throw new BaseException("A fresh VK authorization code is required to link a VK account",
+                            "VK_PROOF_REQUIRED", HttpStatus.BAD_REQUEST);
+                }
+                yield vkAuthService.resolveProfile(request.getCode(), request.getCodeVerifier(), request.getDeviceId(), request.getState());
+            }
+            case YANDEX -> {
+                if (isBlank(request.getAccessToken())) {
+                    throw new BaseException("A fresh Yandex access token is required to link a Yandex account",
+                            "YANDEX_PROOF_REQUIRED", HttpStatus.BAD_REQUEST);
+                }
+                yield yandexAuthService.resolveProfile(request.getAccessToken());
+            }
+            default -> throw new BaseException("Linking is not supported for provider " + request.getProvider(),
+                    "SOCIAL_LINK_NOT_SUPPORTED", HttpStatus.BAD_REQUEST);
+        };
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 }
