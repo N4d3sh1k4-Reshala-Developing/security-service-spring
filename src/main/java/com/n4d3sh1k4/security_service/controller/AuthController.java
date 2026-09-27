@@ -189,7 +189,7 @@ public class AuthController {
         String userAgent = httpRequest.getHeader("User-Agent");
 
         try {
-            AuthServiceResult result = vkAuthService.authenticateMobile(request.getCode(), request.getCodeVerifier(), request.getDeviceId(), userAgent, ip);
+            AuthServiceResult result = vkAuthService.authenticateMobile(request.getCode(), request.getCodeVerifier(), request.getDeviceId(), request.getState(), userAgent, ip);
             return ResponseEntity.ok()
                     .header(HttpHeaders.SET_COOKIE, result.getCookie())
                     .body(new JwtResponse(result.getAccesToken()));

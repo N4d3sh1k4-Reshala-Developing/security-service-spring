@@ -541,7 +541,7 @@ class AuthControllerTest {
 
     @Test
     void vkMobile_emailCollision_returns409LinkRequired() throws Exception {
-        when(vkAuthService.authenticateMobile(eq("vk_code"), eq("verifier"), eq("device-1"), any(), any()))
+        when(vkAuthService.authenticateMobile(eq("vk_code"), eq("verifier"), eq("device-1"), any(), any(), any()))
                 .thenThrow(new OAuthEmailAlreadyExistsException("user@example.com", AuthProvider.VK, "777"));
 
         mockMvc.perform(post("/auth/vk-mobile")
@@ -557,7 +557,7 @@ class AuthControllerTest {
 
     @Test
     void vkMobile_missingCodeVerifier_returns200() throws Exception {
-        when(vkAuthService.authenticateMobile(eq("vk_code"), isNull(), eq("device-1"), any(), any()))
+        when(vkAuthService.authenticateMobile(eq("vk_code"), isNull(), eq("device-1"), any(), any(), any()))
                 .thenReturn(new AuthServiceResult(ACCESS_TOKEN, REFRESH_COOKIE));
 
         mockMvc.perform(post("/auth/vk-mobile")

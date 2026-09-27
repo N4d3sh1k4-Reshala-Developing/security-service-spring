@@ -47,8 +47,8 @@ public class VkAuthService {
     private final CookieUtils cookieUtils;
     private final UserGeoService userGeoService;
 
-    public AuthServiceResult authenticateMobile(String code, String codeVerifier, String deviceId, String userAgent, String ip) {
-        String accessToken = exchangeCodeForAccessToken(code, codeVerifier, deviceId);
+    public AuthServiceResult authenticateMobile(String code, String codeVerifier, String deviceId, String state, String userAgent, String ip) {
+        String accessToken = exchangeCodeForAccessToken(code, codeVerifier, deviceId, state);
 
         Map<String, Object> vkUserAttributes = fetchVkUserInfo(accessToken, deviceId);
 
@@ -79,7 +79,7 @@ public class VkAuthService {
      * здесь code_verifier приходит от мобильного приложения (если SDK его возвращает)
      * и передаётся как есть; при отсутствии параметр не отправляется.
      */
-    private String exchangeCodeForAccessToken(String code, String codeVerifier, String deviceId) {
+    private String exchangeCodeForAccessToken(String code, String codeVerifier, String deviceId, String state) {
         MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
         form.add("grant_type", "authorization_code");
         form.add("client_id", vkClientId);
@@ -90,6 +90,9 @@ public class VkAuthService {
         }
         if (deviceId != null && !deviceId.isBlank()) {
             form.add("device_id", deviceId);
+        }
+        if (state != null && !state.isBlank()) {
+            form.add("state", state);
         }
 
         RequestEntity<MultiValueMap<String, String>> requestEntity = RequestEntity
