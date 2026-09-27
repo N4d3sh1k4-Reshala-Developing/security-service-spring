@@ -18,10 +18,10 @@ public class VkMobileTokenRequest {
     private String codeVerifier;
 
     @Schema(description = "Уникальный идентификатор мобильного устройства от VK ID SDK", example = "abc123-def456")
-    @Size(max = 64)
+    @Size(max = 255)
     private String deviceId;
 
     @Schema(description = "Произвольная строка состояния приложения (генерируется на устройстве)", example = "xyz789")
-    @Size(max = 64)
+    @Size(max = 255)
     private String state;
 }
