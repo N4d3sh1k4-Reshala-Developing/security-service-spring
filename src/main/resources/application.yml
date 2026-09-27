@@ -54,7 +54,6 @@ logging:
     root: INFO
     org.springframework.web: INFO
     org.springframework.web.filter.CommonsRequestLoggingFilter: DEBUG
-    com.n4d3sh1k4.security_service: DEBUG
   logback:
     rollingpolicy:
       max-file-size: 10MB
@@ -83,6 +82,13 @@ app:
   default-admin:
     email: ${DEFAULT_ADMIN_EMAIL}
     password: ${DEFAULT_ADMIN_PASSWORD}
+
+vk:
+  client:
+    id: ${VK_CLIENT_ID}
+    secret: ${VK_CLIENT_SECRET}
+  redirect:
+    uri: ${VK_REDIRECT_URI:}
 
 email:
   send:

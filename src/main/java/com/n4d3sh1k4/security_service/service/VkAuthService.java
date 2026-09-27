@@ -36,11 +36,21 @@ public class VkAuthService {
 
     private final RestTemplate restTemplate = new RestTemplate();
 
-    @Value("${VK_CLIENT_ID:54657062}")
+    @Value("${vk.client.id}")
     private String vkClientId;
 
-    @Value("${VK_CLIENT_SECRET:d07afc96d07afc96d07afc96e7d338fcb0dd07ad07afc96ba3ba982bc64d9ab003d4939}")
+    @Value("${vk.client.secret}")
     private String vkClientSecret;
+
+    @Value("${vk.redirect.uri:#{null}}")
+    private String vkRedirectUri;
+
+    private String getRedirectUri() {
+        if (vkRedirectUri != null && !vkRedirectUri.isBlank()) {
+            return vkRedirectUri;
+        }
+        return "vk" + vkClientId + "://vk.com/blank.html";
+    }
 
     private final UserService userService;
     private final JwtProvider jwtProvider;
@@ -85,6 +95,7 @@ public class VkAuthService {
         form.add("client_id", vkClientId);
         form.add("client_secret", vkClientSecret);
         form.add("code", code);
+        form.add("redirect_uri", getRedirectUri());
         if (codeVerifier != null && !codeVerifier.isBlank()) {
             form.add("code_verifier", codeVerifier);
         }
@@ -101,12 +112,10 @@ public class VkAuthService {
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                 .body(form);
 
-        log.debug("[VK] POST {} body={}", VK_TOKEN_URI, describeForm(form));
         try {
             ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
                     requestEntity, new ParameterizedTypeReference<Map<String, Object>>() {});
             Map<String, Object> body = response.getBody();
-            log.debug("[VK] POST {} response={}", VK_TOKEN_URI, maskTokens(body));
             if (body != null && body.get("error") != null) {
                 log.error("[VK] token exchange returned error body: error={} error_description={}",
                         body.get("error"), body.get("error_description"));
@@ -144,12 +153,10 @@ public class VkAuthService {
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                 .body(form);
 
-        log.debug("[VK] POST {} body={}", VK_USER_INFO_URI, describeForm(form));
         try {
             ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
                     requestEntity, new ParameterizedTypeReference<Map<String, Object>>() {});
             Map<String, Object> responseBody = response.getBody();
-            log.debug("[VK] POST {} response={}", VK_USER_INFO_URI, maskTokens(responseBody));
             if (responseBody != null && responseBody.get("error") != null) {
                 log.error("[VK] user_info returned error body: error={} error_description={}",
                         responseBody.get("error"), responseBody.get("error_description"));
@@ -197,28 +204,6 @@ public class VkAuthService {
             }
         }
         return result;
-    }
-
-    private String describeForm(MultiValueMap<String, String> form) {
-        Map<String, String> visible = new LinkedHashMap<>();
-        form.forEach((key, values) -> visible.put(key,
-                ("client_secret".equals(key) || "access_token".equals(key)) ? "***" : String.join(",", values)));
-        return visible.toString();
-    }
-
-    private Map<String, Object> maskTokens(Map<String, Object> body) {
-        if (body == null) {
-            return null;
-        }
-        Map<String, Object> copy = new LinkedHashMap<>(body);
-        for (String key : List.of("access_token", "refresh_token", "id_token")) {
-            Object value = copy.get(key);
-            if (value != null) {
-                String str = String.valueOf(value);
-                copy.put(key, str.length() > 12 ? str.substring(0, 12) + "..." : "***");
-            }
-        }
-        return copy;
     }
 
     /**

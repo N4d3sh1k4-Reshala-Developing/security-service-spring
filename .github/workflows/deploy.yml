@@ -47,6 +47,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Validate required secrets
+        env:
+          VK_CLIENT_ID: ${{ secrets.VK_CLIENT_ID }}
+          VK_CLIENT_SECRET: ${{ secrets.VK_CLIENT_SECRET }}
+        run: |
+          test -n "$VK_CLIENT_ID" || { echo "::error::GitHub secret VK_CLIENT_ID is not set"; exit 1; }
+          test -n "$VK_CLIENT_SECRET" || { echo "::error::GitHub secret VK_CLIENT_SECRET is not set"; exit 1; }
+
       - name: set lower case image name
         run: |
           echo "IMAGE_NAME=${GITHUB_REPOSITORY,,}" >> ${GITHUB_ENV}
@@ -85,6 +93,9 @@ jobs:
             echo "RMQ_PASS=${{ secrets.RMQ_PASS }}" >> .env
             echo "YANDEX_CLIENT_ID=${{ secrets.YANDEX_CLIENT_ID }}" >> .env
             echo "YANDEX_CLIENT_SECRET=${{ secrets.YANDEX_CLIENT_SECRET }}" >> .env
+            echo "VK_CLIENT_ID=${{ secrets.VK_CLIENT_ID }}" >> .env
+            echo "VK_CLIENT_SECRET=${{ secrets.VK_CLIENT_SECRET }}" >> .env
+            echo "VK_REDIRECT_URI=${{ secrets.VK_REDIRECT_URI }}" >> .env
             echo "DEFAULT_ADMIN_EMAIL=${{ secrets.DEFAULT_ADMIN_EMAIL }}" >> .env
             echo "DEFAULT_ADMIN_USERNAME=${{ secrets.DEFAULT_ADMIN_USERNAME }}" >> .env
             echo "DEFAULT_ADMIN_PASSWORD=${{ secrets.DEFAULT_ADMIN_PASSWORD }}" >> .env
