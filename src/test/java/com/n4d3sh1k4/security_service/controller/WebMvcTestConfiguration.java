@@ -19,7 +19,8 @@ import org.springframework.security.web.SecurityFilterChain;
 @SpringBootConfiguration
 @EnableWebSecurity
 @ComponentScan(basePackages = {
-        "com.n4d3sh1k4.common.advice"
+        "com.n4d3sh1k4.common.advice",
+        "com.n4d3sh1k4.security_service.advice"
 })
 public class WebMvcTestConfiguration {
 

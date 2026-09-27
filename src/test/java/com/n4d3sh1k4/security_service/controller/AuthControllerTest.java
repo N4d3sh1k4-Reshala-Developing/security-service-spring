@@ -32,6 +32,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -308,6 +309,50 @@ class AuthControllerTest {
                                 """))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.error.code").value("EMAIL_NOT_VERIFIED"));
+    }
+
+    @Test
+    void login_lockedAccount_returns429() throws Exception {
+        doThrow(new LockedException("User is locked"))
+                .when(authenticationManager).authenticate(any());
+
+        mockMvc.perform(post("/auth/login")
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "email": "user@gmail.com",
+                                  "password": "Password#4848"
+                                }
+                                """))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("RATE_LIMIT_EXCEEDED"))
+                .andExpect(jsonPath("$.error.message").value("Account is locked. Try again later."));
+    }
+
+    @Test
+    void errorResponseBody_isLoggedWithCodeAndMessage() throws Exception {
+        ch.qos.logback.classic.Logger logger = (ch.qos.logback.classic.Logger)
+                org.slf4j.LoggerFactory.getLogger(com.n4d3sh1k4.security_service.advice.ErrorResponseLogger.class);
+        ch.qos.logback.core.read.ListAppender<ch.qos.logback.classic.spi.ILoggingEvent> appender =
+                new ch.qos.logback.core.read.ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+        try {
+            mockMvc.perform(post("/auth/login")
+                            .contentType("application/json")
+                            .content("{\"email\": \"\"}"))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
+        } finally {
+            logger.detachAppender(appender);
+        }
+
+        org.junit.jupiter.api.Assertions.assertFalse(appender.list.isEmpty());
+        String msg = appender.list.get(0).getFormattedMessage();
+        org.junit.jupiter.api.Assertions.assertTrue(
+                msg.contains("/auth/login") && msg.contains("400") && msg.contains("VALIDATION_ERROR"),
+                "unexpected log line: " + msg);
     }
 
     @Test
