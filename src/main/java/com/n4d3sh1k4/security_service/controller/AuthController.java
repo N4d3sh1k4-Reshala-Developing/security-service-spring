@@ -182,7 +182,7 @@ public class AuthController {
     }
 
     @Operation(summary = "Авторизация через VK ID (мобильное приложение)",
-               description = "Принимает код авторизации, codeVerifier, deviceId и state от VK ID SDK (флоу WebView), обменивает код на токены в VK ID Backend и возвращает JWT.")
+               description = "Принимает код авторизации и опциональные codeVerifier, deviceId и state от VK ID SDK (флоу WebView), обменивает код на токены в VK ID Backend и возвращает JWT.")
     @PostMapping("/vk-mobile")
     public ResponseEntity<?> vkMobile(@Valid @RequestBody VkMobileTokenRequest request, HttpServletRequest httpRequest) {
         String ip = ClientIpUtils.resolve(httpRequest);

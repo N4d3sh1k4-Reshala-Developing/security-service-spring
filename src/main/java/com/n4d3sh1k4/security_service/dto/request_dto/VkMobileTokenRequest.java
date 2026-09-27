@@ -12,8 +12,7 @@ public class VkMobileTokenRequest {
     @NotBlank
     private String code;
 
-    @Schema(description = "PKCE codeVerifier, сгенерированный на устройстве", example = "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk")
-    @NotBlank
+    @Schema(description = "PKCE codeVerifier из VK ID SDK (если SDK его возвращает)", example = "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk")
     @Size(max = 128)
     private String codeVerifier;
 

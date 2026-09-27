@@ -75,7 +75,8 @@ public class VkAuthService {
     /**
      * Меняет код авторизации на ATv2 в VK ID Backend.
      * В отличие от web-флоу (PKCE хранится в серверной сессии Spring Security),
-     * здесь code_verifier приходит от мобильного приложения и передаётся как есть.
+     * здесь code_verifier приходит от мобильного приложения (если SDK его возвращает)
+     * и передаётся как есть; при отсутствии параметр не отправляется.
      */
     private String exchangeCodeForAccessToken(String code, String codeVerifier, String deviceId) {
         MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
@@ -83,7 +84,9 @@ public class VkAuthService {
         form.add("client_id", vkClientId);
         form.add("client_secret", vkClientSecret);
         form.add("code", code);
-        form.add("code_verifier", codeVerifier);
+        if (codeVerifier != null && !codeVerifier.isBlank()) {
+            form.add("code_verifier", codeVerifier);
+        }
         if (deviceId != null && !deviceId.isBlank()) {
             form.add("device_id", deviceId);
         }

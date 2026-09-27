@@ -556,6 +556,19 @@ class AuthControllerTest {
     }
 
     @Test
+    void vkMobile_missingCodeVerifier_returns200() throws Exception {
+        when(vkAuthService.authenticateMobile(eq("vk_code"), isNull(), eq("device-1"), any(), any()))
+                .thenReturn(new AuthServiceResult(ACCESS_TOKEN, REFRESH_COOKIE));
+
+        mockMvc.perform(post("/auth/vk-mobile")
+                        .contentType("application/json")
+                        .content("{\"code\": \"vk_code\", \"deviceId\": \"device-1\"}"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.SET_COOKIE, REFRESH_COOKIE))
+                .andExpect(jsonPath("$.data.accessToken").value(ACCESS_TOKEN));
+    }
+
+    @Test
     void vkMobile_oversizedDeviceId_returns400AndLogsField() throws Exception {
         ch.qos.logback.classic.Logger logger = (ch.qos.logback.classic.Logger)
                 org.slf4j.LoggerFactory.getLogger(com.n4d3sh1k4.security_service.advice.FrameworkExceptionHandler.class);
