@@ -56,6 +56,7 @@ logging:
     org.hibernate.type.descriptor.sql.BasicBinder: INFO
     org.springframework.web: DEBUG
     org.springframework.web.filter.CommonsRequestLoggingFilter: DEBUG
+    com.n4d3sh1k4.security_service: DEBUG
   logback:
     rollingpolicy:
       max-file-size: 10MB

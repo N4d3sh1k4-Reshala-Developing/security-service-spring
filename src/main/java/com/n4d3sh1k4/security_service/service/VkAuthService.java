@@ -18,6 +18,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
@@ -97,15 +98,24 @@ public class VkAuthService {
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                 .body(form);
 
+        log.debug("[VK] POST {} body={}", VK_TOKEN_URI, describeForm(form));
         try {
             ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
                     requestEntity, new ParameterizedTypeReference<Map<String, Object>>() {});
             Map<String, Object> body = response.getBody();
+            log.debug("[VK] POST {} response={}", VK_TOKEN_URI, maskTokens(body));
+            if (body != null && body.get("error") != null) {
+                log.error("[VK] token exchange returned error body: error={} error_description={}",
+                        body.get("error"), body.get("error_description"));
+            }
             if (body == null || body.get("access_token") == null) {
                 throw new BaseException("VK ID did not return an access token", "VK_TOKEN_EXCHANGE_FAILED", HttpStatus.BAD_REQUEST);
             }
             return String.valueOf(body.get("access_token"));
         } catch (RestClientException ex) {
+            if (ex instanceof HttpStatusCodeException httpEx) {
+                log.error("[VK] POST {} -> {} body={}", VK_TOKEN_URI, httpEx.getStatusCode(), httpEx.getResponseBodyAsString());
+            }
             log.error("VK mobile token exchange failed: {}", ex.getMessage(), ex);
             throw new BaseException("VK ID token exchange failed: " + ex.getMessage(), "VK_TOKEN_EXCHANGE_FAILED", HttpStatus.BAD_REQUEST);
         }
@@ -131,15 +141,25 @@ public class VkAuthService {
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                 .body(form);
 
+        log.debug("[VK] POST {} body={}", VK_USER_INFO_URI, describeForm(form));
         try {
             ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
                     requestEntity, new ParameterizedTypeReference<Map<String, Object>>() {});
-            Map<String, Object> attributes = extractVkUserAttributes(response.getBody());
+            Map<String, Object> responseBody = response.getBody();
+            log.debug("[VK] POST {} response={}", VK_USER_INFO_URI, maskTokens(responseBody));
+            if (responseBody != null && responseBody.get("error") != null) {
+                log.error("[VK] user_info returned error body: error={} error_description={}",
+                        responseBody.get("error"), responseBody.get("error_description"));
+            }
+            Map<String, Object> attributes = extractVkUserAttributes(responseBody);
             if (attributes == null) {
                 throw new BaseException("Unexpected user info response structure from VK ID", "VK_USER_INFO_FAILED", HttpStatus.BAD_REQUEST);
             }
             return attributes;
         } catch (RestClientException ex) {
+            if (ex instanceof HttpStatusCodeException httpEx) {
+                log.error("[VK] POST {} -> {} body={}", VK_USER_INFO_URI, httpEx.getStatusCode(), httpEx.getResponseBodyAsString());
+            }
             log.error("VK mobile user info request failed: {}", ex.getMessage(), ex);
             throw new BaseException("VK ID user info request failed: " + ex.getMessage(), "VK_USER_INFO_FAILED", HttpStatus.BAD_REQUEST);
         }
@@ -174,6 +194,28 @@ public class VkAuthService {
             }
         }
         return result;
+    }
+
+    private String describeForm(MultiValueMap<String, String> form) {
+        Map<String, String> visible = new LinkedHashMap<>();
+        form.forEach((key, values) -> visible.put(key,
+                ("client_secret".equals(key) || "access_token".equals(key)) ? "***" : String.join(",", values)));
+        return visible.toString();
+    }
+
+    private Map<String, Object> maskTokens(Map<String, Object> body) {
+        if (body == null) {
+            return null;
+        }
+        Map<String, Object> copy = new LinkedHashMap<>(body);
+        for (String key : List.of("access_token", "refresh_token", "id_token")) {
+            Object value = copy.get(key);
+            if (value != null) {
+                String str = String.valueOf(value);
+                copy.put(key, str.length() > 12 ? str.substring(0, 12) + "..." : "***");
+            }
+        }
+        return copy;
     }
 
     /**

@@ -54,6 +54,7 @@ logging:
     root: INFO
     org.springframework.web: INFO
     org.springframework.web.filter.CommonsRequestLoggingFilter: DEBUG
+    com.n4d3sh1k4.security_service: DEBUG
   logback:
     rollingpolicy:
       max-file-size: 10MB
